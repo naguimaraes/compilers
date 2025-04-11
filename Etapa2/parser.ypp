@@ -1,0 +1,195 @@
+%{
+    // Federal University of Rio Grande do Sul - Institute of Informatics - Compilers 2025/1
+    // Syntax parser (parser.ypp) made by Nathan Guimaraes (334437) on 08/04/2025
+
+
+    #include <stdio.h>
+    #include <string>
+
+    using namespace std;
+    
+    int yylex(void);
+    void yyerror(string s);
+
+    int getLineNumber();
+%}
+
+%token KW_BYTE           
+%token KW_INT            
+%token KW_REAL           
+ 
+%token KW_IF             
+%token KW_ELSE           
+%token KW_DO             
+%token KW_WHILE          
+%token KW_READ           
+%token KW_PRINT          
+%token KW_RETURN         
+ 
+%token OPERATOR_LE       
+%token OPERATOR_GE       
+%token OPERATOR_EQ       
+%token OPERATOR_DIF      
+ 
+%token TK_IDENTIFIER     
+ 
+%token LIT_INT           
+%token LIT_CHAR          
+%token LIT_REAL          
+%token LIT_STRING
+
+%token TOKEN_ERROR
+
+%left '~'
+%left '&' '|'
+%left '+' '-'
+%left '*' '/' '%'
+%left '<' '>' OPERATOR_LE OPERATOR_GE
+%left OPERATOR_EQ OPERATOR_DIF
+
+%%
+
+program
+    : global_declaration_list
+    ;
+
+global_declaration_list
+    : declaration_list global_declaration_list
+    | declaration_list
+    ;
+
+declaration_list
+    : variable_declaration
+    | vector_declaration
+    | function_declaration
+    ;
+
+kw_type
+    : KW_BYTE
+    | KW_INT
+    | KW_REAL
+    ;
+
+literal
+    : LIT_INT
+    | LIT_CHAR
+    | LIT_REAL 
+    ;
+
+variable_declaration
+    : kw_type TK_IDENTIFIER '=' literal ';'
+    ;
+
+vector_declaration
+    : kw_type TK_IDENTIFIER '[' LIT_INT ']' ';'
+    | kw_type TK_IDENTIFIER '[' LIT_INT ']' '=' vector_initialization
+    ;
+
+vector_initialization
+    : literal ',' vector_initialization
+    | literal ';'                 
+    ;
+
+function_declaration
+    : kw_type TK_IDENTIFIER '(' formal_parameters ')' commannd_block
+    ;
+
+formal_parameters
+    : parameter_list
+    | %empty
+    ;
+
+parameter_list
+    : kw_type TK_IDENTIFIER ',' parameter_list
+    | kw_type TK_IDENTIFIER
+    ;
+
+commannd_block
+    : '{' command_list '}'
+    ;
+
+command_list
+    : command command_list
+    | command
+    | %empty
+    ;
+
+command
+    : commannd_block
+    | assignment ';'
+    | read ';'
+    | print ';'
+    | return ';'
+    | flux_control
+    | ';'
+    ;
+
+assignment
+    : TK_IDENTIFIER '=' expression
+    | TK_IDENTIFIER '[' expression ']' '=' expression
+    ;
+
+read
+    : KW_READ TK_IDENTIFIER
+    ;
+
+print
+    : KW_PRINT print_list
+    ;
+
+print_list
+    : LIT_STRING print_list
+    | expression print_list
+    | LIT_STRING
+    | expression
+    ;
+
+return
+    : KW_RETURN expression
+    ;
+
+expression
+    : expression '+' expression
+    | expression '-' expression
+    | expression '*' expression
+    | expression '/' expression
+    | expression '<' expression
+    | expression '>' expression
+    | expression '&' expression
+    | expression '|' expression
+    | expression OPERATOR_DIF expression
+    | expression OPERATOR_LE expression
+    | expression OPERATOR_GE expression
+    | expression OPERATOR_EQ expression
+    | '~' expression
+    | '(' expression ')'
+    | TK_IDENTIFIER
+    | TK_IDENTIFIER '[' expression ']'
+    | LIT_INT
+    | LIT_CHAR
+    | TK_IDENTIFIER '('arguments_list ')'
+    ;
+
+arguments_list
+    :   expression_list 
+    |   %empty
+    ;
+
+expression_list
+    : expression ',' expression_list
+    | expression
+    ;
+
+flux_control
+    : KW_IF '(' expression ')' command
+    | KW_IF '(' expression ')' command KW_ELSE command
+    | KW_WHILE expression KW_DO command
+    | KW_DO command KW_WHILE expression ';'
+    ;
+
+%%
+
+void yyerror(string s){
+    fprintf(stderr, "%s at line %d.\n", s.c_str(), getLineNumber());
+    exit(3);
+}
