@@ -33,7 +33,7 @@ target: $(PROJECT)
 
 .PHONY:
 run: $(PROJECT)
-	./$(PROJECT)
+	./$(PROJECT) test.txt
 
 OBJS = lex.yy.o main.o symbol.o
 $(PROJECT): $(OBJS)
