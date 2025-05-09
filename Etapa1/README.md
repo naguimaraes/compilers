@@ -57,3 +57,4 @@ This command will remove all object files, the executable, and any other generat
 - `symbol.cpp` and `symbol.h`: Symbol table implementation
 - `main.cpp`: Program entry point and control flow
 - `Makefile`: Compilation instructions
+- `spect1.pdf`: PDF with the specification of this stage, in portuguese
