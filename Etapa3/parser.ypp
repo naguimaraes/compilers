@@ -1,0 +1,247 @@
+%{
+    // Federal University of Rio Grande do Sul - Institute of Informatics - Compilers 2025/1
+    // Syntax parser made by Nathan Guimaraes (334437)
+
+    #include <stdio.h>
+    #include <string>
+    #include "ast.hpp"
+    #include "symbol.hpp"
+
+    using namespace std;
+    
+    int yylex(void);
+    void yyerror(string s);
+
+    int getLineNumber();
+
+    ASTNode* root;
+%}
+
+%code requires {
+    #include "ast.hpp"
+}
+
+%union {
+    Symbol* symbol;
+    ASTNode* ast;
+}
+
+%expect 1
+
+%token KW_BYTE           
+%token KW_INT            
+%token KW_REAL           
+ 
+%token KW_IF             
+%token KW_ELSE           
+%token KW_DO             
+%token KW_WHILE          
+%token KW_READ           
+%token KW_PRINT          
+%token KW_RETURN         
+ 
+%token OPERATOR_LE       
+%token OPERATOR_GE       
+%token OPERATOR_EQ       
+%token OPERATOR_DIF      
+ 
+%token<symbol> TK_IDENTIFIER     
+ 
+%token<symbol> LIT_INT           
+%token<symbol> LIT_CHAR          
+%token<symbol> LIT_REAL          
+%token<symbol> LIT_STRING
+
+%token TOKEN_ERROR
+
+%type<ast> program
+%type<ast> global_declaration_list
+%type<ast> declaration_list
+%type<ast> variable_declaration
+%type<ast> vector_declaration
+%type<ast> function_declaration
+%type<ast> kw_type
+%type<ast> literal
+%type<ast> vector_initialization
+%type<ast> formal_parameters
+%type<ast> parameter_list
+%type<ast> commannd_block
+%type<ast> command_list
+%type<ast> command
+%type<ast> assignment
+%type<ast> read
+%type<ast> print
+%type<ast> print_list
+%type<ast> return
+%type<ast> expression
+%type<ast> function_call
+%type<ast> factor
+%type<ast> arguments_list
+%type<ast> expression_list
+%type<ast> flux_control
+
+%left '~'
+%left '&' '|'
+%left '+' '-'
+%left '*' '/' '%'
+%left '<' '>' OPERATOR_LE OPERATOR_GE
+%left OPERATOR_EQ OPERATOR_DIF
+
+%precedence IFX
+%precedence KW_ELSE
+
+%%
+
+program
+    : global_declaration_list                                                { root = $1; }
+    ;
+
+global_declaration_list
+    : declaration_list global_declaration_list                               { $$ = new ASTNode(ASTNodeType::DECLARATION_LIST); $$->addChild($1); if ($2 != nullptr) $$->addChild($2); }
+    | declaration_list                                                       { $$ = new ASTNode(ASTNodeType::DECLARATION_LIST); $$->addChild($1); }
+    ;
+
+declaration_list
+    : variable_declaration                                                   { $$ = $1; }
+    | vector_declaration                                                     { $$ = $1; }
+    | function_declaration                                                   { $$ = $1; }
+    ;
+
+kw_type
+    : KW_BYTE                                                                { $$ = new ASTNode(ASTNodeType::BYTE); }
+    | KW_INT                                                                 { $$ = new ASTNode(ASTNodeType::INT); }
+    | KW_REAL                                                                { $$ = new ASTNode(ASTNodeType::REAL); }
+    ;
+
+literal
+    : LIT_INT                                                                { $$ = new ASTNode(ASTNodeType::LITERAL, $1); }
+    | LIT_CHAR                                                               { $$ = new ASTNode(ASTNodeType::LITERAL, $1); }
+    | LIT_REAL                                                               { $$ = new ASTNode(ASTNodeType::LITERAL, $1); }
+    ;
+
+variable_declaration
+    : kw_type TK_IDENTIFIER '=' literal ';'                                  { $$ = new ASTNode(ASTNodeType::VARIABLE_DECLARATION); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); $$->addChild($4); }
+    ;
+
+vector_declaration
+    : kw_type TK_IDENTIFIER '[' LIT_INT ']' ';'                              { $$ = new ASTNode(ASTNodeType::VECTOR_DECLARATION); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); $$->addChild(new ASTNode(ASTNodeType::LITERAL, $4)); }
+    | kw_type TK_IDENTIFIER '[' LIT_INT ']' '=' vector_initialization        { $$ = new ASTNode(ASTNodeType::VECTOR_DECLARATION); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); $$->addChild(new ASTNode(ASTNodeType::LITERAL, $4)); ASTNode* initNode = new ASTNode(ASTNodeType::VECTOR_INITIALIZATION); initNode->addChild($7); $$->addChild(initNode); }
+    ;
+
+vector_initialization
+    : literal ',' vector_initialization                                      { $$ = new ASTNode(ASTNodeType::VECTOR_INITIALIZATION); $$->addChild($1); if ($3 != nullptr) $$->addChild($3); }
+    | literal ';'                                                            { $$ = new ASTNode(ASTNodeType::VECTOR_INITIALIZATION); $$->addChild($1); }
+    ;
+
+function_declaration
+    : kw_type TK_IDENTIFIER '(' formal_parameters ')' commannd_block         { $$ = new ASTNode(ASTNodeType::FUNCTION_DECLARATION); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); if ($4 != nullptr) $$->addChild($4); if ($6 != nullptr) $$->addChild($6); }
+    ;
+
+formal_parameters
+    : parameter_list                                                         { $$ = new ASTNode(ASTNodeType::FORMAL_PARAMETERS); $$->addChild($1); }
+    | %empty                                                                 { $$ = new ASTNode(ASTNodeType::FORMAL_PARAMETERS); }
+    ;
+
+parameter_list
+    : kw_type TK_IDENTIFIER ',' parameter_list                               { $$ = new ASTNode(ASTNodeType::PARAMETERS_LIST); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); if ($4 != nullptr) $$->addChild($4); }
+    | kw_type TK_IDENTIFIER                                                  { $$ = new ASTNode(ASTNodeType::PARAMETERS_LIST); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); }
+    ;
+
+commannd_block
+    : '{' command_list '}'                                                   { $$ = new ASTNode(ASTNodeType::COMMAND); if ($2 != nullptr) $$->addChild($2); }
+    ;
+
+command_list
+    : command command_list                                                   { $$ = new ASTNode(ASTNodeType::COMMAND_LIST); $$->addChild($1); if ($2 != nullptr) $$->addChild($2); }
+    | %empty                                                                 { $$ = nullptr; }
+    ;
+
+command
+    : commannd_block                                                         { $$ = $1; }
+    | assignment ';'                                                         { $$ = $1; }
+    | read ';'                                                               { $$ = $1; }
+    | print ';'                                                              { $$ = $1; }
+    | return ';'                                                             { $$ = $1; }
+    | flux_control                                                           { $$ = $1; }
+    | ';'                                                                    { $$ = nullptr; }
+    ;
+
+assignment
+    : TK_IDENTIFIER '=' expression                                           { $$ = new ASTNode(ASTNodeType::ASSIGNMENT); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
+    | TK_IDENTIFIER '[' expression ']' '=' expression                        { $$ = new ASTNode(ASTNodeType::ASSIGNMENT); ASTNode* identNode = new ASTNode(ASTNodeType::SYMBOL, $1); identNode->addChild($3); $$->addChild(identNode); if ($6 != nullptr) $$->addChild($6); }
+    ;
+
+read
+    : KW_READ TK_IDENTIFIER                                                  { $$ = new ASTNode(ASTNodeType::READ); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); }
+    ;
+
+print
+    : KW_PRINT print_list                                                    { $$ = new ASTNode(ASTNodeType::PRINT); $$->addChild($2); }
+    ;
+
+print_list
+    : LIT_STRING print_list                                                  { $$ = new ASTNode(ASTNodeType::LITERAL, $1); if ($2 != nullptr) $$->addChild($2); }
+    | expression print_list                                                  { $$ = $1; if ($2 != nullptr) $$->addChild($2); }
+    | LIT_STRING                                                             { $$ = new ASTNode(ASTNodeType::LITERAL, $1); }
+    | expression                                                             { $$ = $1; }
+    ;
+
+return
+    : KW_RETURN expression                                                   { $$ = new ASTNode(ASTNodeType::RETURN); if ($2 != nullptr) $$->addChild($2); }
+    ;
+
+expression
+    : expression '+' expression                                              { $$ = new ASTNode(ASTNodeType::ADD); $$->addChild($1); $$->addChild($3); }
+    | expression '-' expression                                              { $$ = new ASTNode(ASTNodeType::SUBTRACT); $$->addChild($1); $$->addChild($3); }
+    | expression '*' expression                                              { $$ = new ASTNode(ASTNodeType::MULTIPLY); $$->addChild($1); $$->addChild($3); }
+    | expression '/' expression                                              { $$ = new ASTNode(ASTNodeType::DIVIDE); $$->addChild($1); $$->addChild($3); }
+    | expression '%' expression                                              { $$ = new ASTNode(ASTNodeType::MODULO); $$->addChild($1); $$->addChild($3); }
+    | expression '<' expression                                              { $$ = new ASTNode(ASTNodeType::LESS_THAN); $$->addChild($1); $$->addChild($3); }
+    | expression '>' expression                                              { $$ = new ASTNode(ASTNodeType::GREATER_THAN); $$->addChild($1); $$->addChild($3); }
+    | expression '&' expression                                              { $$ = new ASTNode(ASTNodeType::AND); $$->addChild($1); $$->addChild($3); }
+    | expression '|' expression                                              { $$ = new ASTNode(ASTNodeType::OR); $$->addChild($1); $$->addChild($3); }
+    | expression OPERATOR_DIF expression                                     { $$ = new ASTNode(ASTNodeType::DIFFERENT); $$->addChild($1); $$->addChild($3); }
+    | expression OPERATOR_LE expression                                      { $$ = new ASTNode(ASTNodeType::LESS_EQUAL); $$->addChild($1); $$->addChild($3); }
+    | expression OPERATOR_GE expression                                      { $$ = new ASTNode(ASTNodeType::GREATER_EQUAL); $$->addChild($1); $$->addChild($3); }
+    | expression OPERATOR_EQ expression                                      { $$ = new ASTNode(ASTNodeType::EQUAL); $$->addChild($1); $$->addChild($3); }
+    | '~' expression                                                         { $$ = new ASTNode(ASTNodeType::NOT); $$->addChild($2); }
+    | '(' expression ')'                                                     { $$ = $2; }
+    | TK_IDENTIFIER '[' expression ']'                                       { $$ = new ASTNode(ASTNodeType::SYMBOL, $1); $$->addChild($3); }
+    | function_call                                                          { $$ = $1; }
+    | factor                                                                 { $$ = $1; }
+    ;
+
+function_call
+    : TK_IDENTIFIER '(' arguments_list ')'                                   { $$ = new ASTNode(ASTNodeType::FUNCTION_CALL); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
+    ;
+
+factor
+    : TK_IDENTIFIER                                                          { $$ = new ASTNode(ASTNodeType::SYMBOL, $1); }
+    | LIT_INT                                                                { $$ = new ASTNode(ASTNodeType::LITERAL, $1); }
+    | LIT_CHAR                                                               { $$ = new ASTNode(ASTNodeType::LITERAL, $1); }
+    | LIT_REAL                                                               { $$ = new ASTNode(ASTNodeType::LITERAL, $1); }
+    ;
+
+arguments_list
+    : expression_list                                                        { $$ = $1; }
+    | %empty                                                                 { $$ = nullptr; }
+    ;
+
+expression_list
+    : expression ',' expression_list                                         { $$ = new ASTNode(ASTNodeType::COMMAND_LIST); $$->addChild($1); if ($3 != nullptr) $$->addChild($3); }
+    | expression                                                             { $$ = $1; }
+    ;
+
+flux_control
+    : KW_IF '(' expression ')' command %prec IFX                             { $$ = new ASTNode(ASTNodeType::IF); $$->addChild($3); if ($5 != nullptr) $$->addChild($5); }
+    | KW_IF '(' expression ')' command KW_ELSE command                       { $$ = new ASTNode(ASTNodeType::IF); $$->addChild($3); if ($5 != nullptr) $$->addChild($5); ASTNode* elseNode = new ASTNode(ASTNodeType::ELSE); if ($7 != nullptr) elseNode->addChild($7); $$->addChild(elseNode); }
+    | KW_WHILE expression KW_DO command                                      { $$ = new ASTNode(ASTNodeType::WHILE_DO); $$->addChild($2); if ($4 != nullptr) $$->addChild($4); }
+    | KW_DO command KW_WHILE expression ';'                                  { $$ = new ASTNode(ASTNodeType::DO_WHILE); if ($2 != nullptr) $$->addChild($2); $$->addChild($4); }
+    ;
+
+%%
+
+void yyerror(string s){
+    fprintf(stderr, "%s at line %d.\n", s.c_str(), getLineNumber());
+    exit(3);
+}
