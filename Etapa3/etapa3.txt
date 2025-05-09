@@ -9,7 +9,7 @@ int y = 1;
 
 // declaracao de um vetor de 10 posicoes, inicializado
 
-int v[01] = 'a',0,'b',0,0,0,0,0,0,0;
+int v[01] = 'a',04,'b',500,10,0,0,0,0,0;
 
 // declaracao de uma matriz de 100 posicoes, nao inicializada
 

@@ -28,3 +28,6 @@ class Symbol {
 Symbol *insertSymbol(string lex, int type);
 
 void printSymbolTable();
+
+string invertNumberInt(string number);
+string invertNumberReal(string number);

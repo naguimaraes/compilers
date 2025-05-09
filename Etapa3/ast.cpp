@@ -1,5 +1,7 @@
 #include "ast.hpp"
+#include "parser.tab.hpp"
 #include <stdio.h>
+#include <iostream>
 
 vector<string> ASTTypeNames = {
     "UNKNOWN",
@@ -106,7 +108,7 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
             }
             
             if (node->getChildren().size() > 2 && node->getChildren()[2] && node->getChildren()[2]->getSymbol()) {
-                outFile << "[" << node->getChildren()[2]->getSymbol()->getLex() << "]";
+                outFile << "[" << invertNumberInt(node->getChildren()[2]->getSymbol()->getLex()) << "]";
             }
             
             if (node->getChildren().size() > 3) {
@@ -479,14 +481,35 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
         }
         
         case ASTNodeType::LITERAL: {
-            if (node->getSymbol())
-                outFile << node->getSymbol()->getLex();
+            if (node->getSymbol()) {
+                Symbol* symbol = node->getSymbol();
+                int type = symbol->getType();
+
+
+                if (type == LIT_INT) {
+                    outFile << invertNumberInt(symbol->getLex());
+                } else if (type == LIT_REAL) {
+                    outFile << invertNumberReal(symbol->getLex());
+                } else {
+                    outFile << symbol->getLex();
+                }
+            }
             break;
         }
         
         case ASTNodeType::SYMBOL: {
-            if (node->getSymbol())
-                outFile << node->getSymbol()->getLex();
+            if (node->getSymbol()){
+                Symbol* symbol = node->getSymbol();
+                int type = symbol->getType();
+
+                if (type == LIT_INT) {
+                    outFile << invertNumberInt(symbol->getLex());
+                } else if (type == LIT_REAL) {
+                    outFile << invertNumberReal(symbol->getLex());
+                } else {
+                    outFile << symbol->getLex();
+                }
+            }
             break;
         }
         

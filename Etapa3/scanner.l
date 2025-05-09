@@ -16,27 +16,6 @@
         
     }
 
-    string invertNumberInt(string number){
-        
-        string invertedNum(number.size(), '\0');
-
-        for(unsigned long i = 0; i < number.size(); i++){
-            invertedNum[i] = number[number.size() - i - 1];
-        }
-
-        return invertedNum;
-    }
-
-    string invertNumberReal(string number){
-        unsigned long i = 0;
-
-        while(number[i] != '/'){
-            i++;
-        }
-
-        return invertNumberInt(number.substr(0, i)) + "/" + invertNumberInt(number.substr(i + 1, number.size() - i - 1));        
-    }
-
 %}
 
 %option nounput noinput
@@ -67,8 +46,8 @@
 
 \"([^\n"]|(\\\"))*\"        {yylval.symbol = insertSymbol(yytext, LIT_STRING); return LIT_STRING;}
 \'.\'                       {yylval.symbol = insertSymbol(yytext, LIT_CHAR); return LIT_CHAR;}
-[0-9]+\/[0-9]+              {yylval.symbol = insertSymbol(yytext, LIT_REAL); return LIT_REAL;}
-[0-9]+                      {yylval.symbol = insertSymbol(yytext, LIT_INT); return LIT_INT;}
+[0-9]+\/[0-9]+              {yylval.symbol = insertSymbol(invertNumberReal(yytext), LIT_REAL); return LIT_REAL;}
+[0-9]+                      {yylval.symbol = insertSymbol(invertNumberInt(yytext), LIT_INT); return LIT_INT;}
 [a-zA-Z\_][a-zA-Z0-9\_]*    {yylval.symbol = insertSymbol(yytext, TK_IDENTIFIER); return TK_IDENTIFIER;}
 
 [ \t]+                      {;}
