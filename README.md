@@ -4,7 +4,8 @@ This project implements a compiler for a simplified language named "2025++1", de
 
 ## Project Structure
 
-The compiler is being developed in progressive stages, where each stage adds new functionalities:
+The compiler is being developed in progressive stages, where each stage adds new functionalities. Inside each stage folder, you will find the source code and documentation related to that specific stage.
+The stages are as follows:
 
 ### [Stage 1 (Etapa1)](./Etapa1): Lexical Analysis
 
