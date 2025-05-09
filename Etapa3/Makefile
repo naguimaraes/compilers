@@ -40,7 +40,7 @@ test: $(PROJECT)
 	@./$(PROJECT) $(PROJECT)_recompiled.txt  $(PROJECT)_recompiled_recompiled.txt 
 	@diff $(PROJECT)_recompiled.txt $(PROJECT)_recompiled_recompiled.txt > /dev/null && echo "\n2 times recompiled code is equal to 1 time recompiled code." || echo "\nRecompiling failed."
 
-OBJS = lex.yy.o symbol.o parser.tab.o ast.o main.o
+OBJS = lex.yy.o parser.tab.o symbol.o ast.o main.o
 $(PROJECT): $(OBJS)
 	$(CXX) $(OBJS) -o $(PROJECT)
 
@@ -52,25 +52,6 @@ lex.yy.cpp: scanner.l $(DEP_FILES) parser.tab.hpp
 
 parser.tab.cpp parser.tab.hpp: parser.ypp
 	$(BISON) $(BISONFLAGS) parser.ypp
-
-.PHONY: docker
-docker: docker-build
-	docker run --volume "$(current_dir)":/project --rm -it $(PROJECT) 
-
-.PHONY: docker-run
-docker-run: docker-build
-	docker run --volume "$(current_dir)":/project --rm -it $(PROJECT) "make run"
-
-.PHONY: docker-connect
-docker-connect: docker-build
-	docker run --volume "$(current_dir)":/project --rm -it $(PROJECT) bash 
-
-.PHONY: docker-build
-docker-build: .docker-build
-
-.docker-build: Dockerfile
-	touch .docker-build
-	docker build -t $(PROJECT) .
 
 .PHONY: versions
 versions:
