@@ -28,16 +28,9 @@ The stages are as follows:
 - Decompilation (source code generation from the AST)
 - Verification of equivalence between original code and decompiled code
 
-## 2025++1 Language
+## 2025++1 Language Specification
 
-2025++1 is a simplified version of C, supporting:
-
-- Data types: `byte`, `int`, `real`
-- Variable and array declarations
-- Function declarations and calls
-- Flow control commands: `if-else`, `while-do`, `do-while`
-- Arithmetic and logical expressions
-- Input and output commands: `read` and `print`
+A detailed specification of the 2025++1 language can be found in the [specification.md](./specification.md) file. This document outlines the syntax, semantics, and features of the language.
 
 ## Development History
 
