@@ -83,4 +83,4 @@ clean:
 .PHONY: tgz
 tgz:
 	@touch $(PROJECT).tgz
-	@tar cvzf $(PROJECT).tgz --exclude=$(PROJECT).tgz --exclude-vcs-ignores --exclude=.git .
+	@tar cvzf $(PROJECT).tgz --add-file=$(PROJECT) --add-file=Makefile --add-file=ast.cpp --add-file=ast.hpp --add-file=main.cpp --add-file=parser.ypp --add-file=scanner.l --add-file=symbol.cpp --add-file=symbol.hpp --add-file=$(PROJECT).txt --add-file=Dockerfile
