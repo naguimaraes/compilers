@@ -1,4 +1,4 @@
-# Stage 1 - Lexical Analysis
+# Stage 1 - Lexical Analysis and Symbol Table
 
 ## Lexical Analysis
 
