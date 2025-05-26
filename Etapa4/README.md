@@ -1,4 +1,4 @@
-# Stage 3 - Abstract Syntax Tree (AST) and Decompilation
+# Stage 3 - Abstract Syntax Tree (AST)
 
 ## Abstract Syntax Tree (AST)
 

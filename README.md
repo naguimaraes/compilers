@@ -7,33 +7,29 @@ This project implements a compiler for a simplified language named "2025++1", de
 The compiler is being developed in progressive stages, where each stage adds new functionalities. Inside each stage folder, you will find the source code and documentation related to that specific stage.
 The stages are as follows:
 
-### [Stage 1 (Etapa1)](./Etapa1): Lexical Analysis
+### [Stage 1 (Etapa1)](./Etapa1): Lexical Analysis ✅
 
 - Implementation of the lexical analyzer using Flex
 - Recognition of tokens (keywords, identifiers, literals)
 - Lexical error handling
 - Symbol table construction
 
-### [Stage 2 (Etapa2)](./Etapa2): Syntactic Analysis
+### [Stage 2 (Etapa2)](./Etapa2): Syntactic Analysis ✅
 
 - Implementation of the syntactic analyzer using Bison
 - Formal grammar for the 2025++1 language
 - Program structure recognition
 - Syntactic error handling
 
-### [Stage 3 (Etapa3)](./Etapa3): Abstract Syntax Tree (AST)
+### [Stage 3 (Etapa3)](./Etapa3): Abstract Syntax Tree (AST) and Decompilation ✅
 
 - Construction of the Abstract Syntax Tree
 - Hierarchical representation of the program structure
 - Decompilation (source code generation from the AST)
 - Verification of equivalence between original code and decompiled code
 
+### [Stage 4 (Etapa4)](./Etapa4): Semantic Analysis and Type Checking ⏳
+
 ## 2025++1 Language Specification
 
 A detailed specification of the 2025++1 language can be found in the [specification.md](./specification.md) file. This document outlines the syntax, semantics, and features of the language.
-
-## Development History
-
-- **Stage 1**: Complete lexical analysis ✅
-- **Stage 2**: Complete syntactic analysis ✅
-- **Stage 3**: Abstract Syntax Tree and Decompilation ✅
