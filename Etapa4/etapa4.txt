@@ -3,6 +3,8 @@
 byte a = 51;
 byte b = 'x';
 byte c = 001;
+byte c = 001;
+
 int number = 'A';
 int x = 1;
 int y = 1;
@@ -70,5 +72,6 @@ int incn (int p, int n)
   {
   return p + n;
   }
+  
 
 // end of file

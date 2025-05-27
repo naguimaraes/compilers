@@ -2,7 +2,7 @@
 # Makefile originally made by Ian Kersz (338368)
 # Later edited by Nathan Guimaraes (334437)
 
-PROJECT = etapa3
+PROJECT = etapa4
 DEFAULT_VERSION = debug
 
 CXX = g++
@@ -40,7 +40,7 @@ test: $(PROJECT)
 	@./$(PROJECT) $(PROJECT)_recompiled.txt  $(PROJECT)_recompiled_recompiled.txt 
 	@diff $(PROJECT)_recompiled.txt $(PROJECT)_recompiled_recompiled.txt > /dev/null && echo "\n2 times recompiled code is equal to 1 time recompiled code." || echo "\nRecompiling failed."
 
-OBJS = lex.yy.o parser.tab.o symbol.o ast.o main.o
+OBJS = lex.yy.o parser.tab.o symbol.o ast.o semantic_verif.o main.o
 $(PROJECT): $(OBJS)
 	$(CXX) $(OBJS) -o $(PROJECT)
 

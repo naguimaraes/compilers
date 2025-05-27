@@ -28,7 +28,7 @@ The stages are as follows:
 - Decompilation (source code generation from the AST)
 - Verification of equivalence between original code and decompiled code
 
-### [Stage 4 (Etapa4)](./Etapa4): Semantic Analysis and Type Checking ⏳
+### [Stage 4 (Etapa4)](./Etapa4): Semantic Verification ⏳
 
 ## 2025++1 Language Specification
 
