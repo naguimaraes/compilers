@@ -2,19 +2,17 @@
 #include "parser.tab.hpp"
 #include <iostream>
 
-// Convert token type to dataType
-dataType convertToDataType(int type) {
-    switch (type) {
-        case KW_BYTE:
-            return dataType::BYTE;
-        case KW_INT:
-            return dataType::INT;
-        case KW_REAL:
-            return dataType::REAL;
-        default:
-            return dataType::VOID;
-    }
+bool semanticVerification(ASTNode* root) {
+     // No AST to verify
+    if (!root) return false;
+
+    // Return false if a redeclaration is found
+    if(checkDeclarations(root)) return false;
+
+    return true; // Return true if no semantic errors are found
 }
+
+// ############## Auxiliary functions ##############
 
 // Convert ASTNodeType to dataType
 dataType convertToDataType(ASTNodeType typeName) {
@@ -30,17 +28,19 @@ dataType convertToDataType(ASTNodeType typeName) {
     }
 }
 
-bool semanticVerification(ASTNode* root) {
-     // No AST to verify
-    if (!root) return false;
-
-    // Return false if a redeclaration is found
-    if(checkDeclarations(root)) return false;
-
-    return true; // Return true if no semantic errors are found
+// Convert token type to dataType
+dataType convertToDataType(int type) {
+    switch (type) {
+        case KW_BYTE:
+            return dataType::BYTE;
+        case KW_INT:
+            return dataType::INT;
+        case KW_REAL:
+            return dataType::REAL;
+        default:
+            return dataType::VOID;
+    }
 }
-
-// ############## Auxiliary functions ##############
 
 // Convert ASTNodeType to dataType
 dataType getExpressionType(ASTNode* expression) {
