@@ -3,4 +3,3 @@
 #include <set>
 
 bool semanticVerification(ASTNode* root);
-bool checkDeclarations(ASTNode* root);

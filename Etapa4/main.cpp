@@ -38,8 +38,8 @@ int main(int argc, char **argv){
 
     //printSymbolTable();
     
-    //fprintf(stderr, "\n======== AST Structure ========\n");
-    //printAST(0, root);
+    fprintf(stderr, "\n======== AST Structure ========\n");
+    printAST(0, root);
 
     std::ofstream outFile(argv[2]);
     if (!outFile.is_open()) {
@@ -52,7 +52,6 @@ int main(int argc, char **argv){
     fprintf(stderr, "Decompiled code can be found in file \"%s\".\n", argv[2]);
 
     if (!semanticVerification(root)) {
-        fprintf(stderr, "Semantic verification failed.\n");
         exit(4); // Exit code 4 for semantic error 
     }
 

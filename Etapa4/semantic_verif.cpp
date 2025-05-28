@@ -2,16 +2,6 @@
 #include "parser.tab.hpp"
 #include <iostream>
 
-bool semanticVerification(ASTNode* root) {
-     // No AST to verify
-    if (!root) return false;
-
-    // Return false if a redeclaration is found
-    if(checkDeclarations(root)) return false;
-
-    return true; // Return true if no semantic errors are found
-}
-
 // ############## Auxiliary functions ##############
 
 // Convert ASTNodeType to dataType
@@ -131,10 +121,18 @@ bool isTypeCompatible(dataType expected, dataType actual) {
     if (expected == actual) {
         return true;
     }
+
+    // Rules:
+    // INT and CHAR are compatible
+    if (expected == dataType::INT && actual == dataType::CHAR) {
+        return true;
+    }
+    if (expected == dataType::CHAR && actual == dataType::INT) {
+        return true;
+    }
     
-    // Type promotion rules: values can be promoted but not demoted
-    return (expected == dataType::INT && actual == dataType::BYTE) ||
-           (expected == dataType::REAL && (actual == dataType::BYTE || actual == dataType::INT));
+    //All other combinations are incompatible
+    return false;
 }
 
 // ############## Verification functions ##############
@@ -224,16 +222,16 @@ bool checkCorrectVectorInitialization(ASTNode* vectorDeclaration) {
     return true;
 }
 
-// Check if an identifier is redeclared
-bool checkIdentifierRedeclaration(ASTNode* declaration, identifierType idType, const char* typeName) {
-    Symbol* symbol = declaration->getChildren()[1]->getSymbol(); // The second child is the name
+// Check if an identifier (variable, vector or function) is redeclared
+bool checkRedeclaration(ASTNode* declaration, identifierType identifierType, const char* typeName) {
+    Symbol* symbol = declaration->getChildren()[1]->getSymbol(); // The second child is the name of the identifier
     if(symbol == nullptr) return false;
 
-    ASTNodeType type = declaration->getChildren()[0]->getType(); // The first child is the type
+    ASTNodeType type = declaration->getChildren()[0]->getType(); // The first child is the type of the identifier
 
     // Check if the symbol is already declared
-    if (symbol->getIdentifierType() != idType) {
-        symbol->setIdentifierType(idType); // First encounter, set the identifier type
+    if (symbol->getIdentifierType() != identifierType) {
+        symbol->setIdentifierType(identifierType); // First encounter, set the identifier type
         symbol->setDataType(convertToDataType(type)); // Set the data type
         return false;
     } else {
@@ -243,36 +241,21 @@ bool checkIdentifierRedeclaration(ASTNode* declaration, identifierType idType, c
     }
 }
 
-// Check for redeclarations of vectors
-bool checkVectorRedeclaration(ASTNode* vectorDeclaration) {
-    return checkIdentifierRedeclaration(vectorDeclaration, identifierType::VECTOR, "Vector");
-}
-
-// Check for redeclarations of variables
-bool checkVariableRedeclaration(ASTNode* variableDeclaration) {
-    return checkIdentifierRedeclaration(variableDeclaration, identifierType::VARIABLE, "Variable");
-}
-
-// Check for redeclarations of functions
-bool checkFunctionRedeclaration(ASTNode* functionDeclaration) {
-    return checkIdentifierRedeclaration(functionDeclaration, identifierType::FUNCTION, "Function");
-}
-
 bool checkDeclarations(ASTNode* root) {
     for (ASTNode* child : root->getChildren()) {
         if (!child) continue; // Skip null children
 
         switch (child->getType()) {
             case ASTNodeType::VARIABLE_DECLARATION: 
-                if (checkVariableRedeclaration(child)) return true;
+                if (checkRedeclaration(child, identifierType::VARIABLE, "Variable")) return true;
                 break;
 
             case ASTNodeType::VECTOR_DECLARATION: 
-                if (checkVectorRedeclaration(child) || !checkCorrectVectorInitialization(child)) return true;
+                if (checkRedeclaration(child, identifierType::VECTOR, "Vector") || !checkCorrectVectorInitialization(child)) return true;
                 break;
 
             case ASTNodeType::FUNCTION_DECLARATION: 
-                if (checkFunctionRedeclaration(child)) return true;
+                if (checkRedeclaration(child, identifierType::FUNCTION, "Function")) return true;
                 break;
 
             // Recursively check children with the same set
@@ -283,4 +266,16 @@ bool checkDeclarations(ASTNode* root) {
     }
     
     return false; // No redeclared variable found in this subtree
+}
+
+
+// Main semantic verification function
+bool semanticVerification(ASTNode* root) {
+     // No AST to verify
+    if (!root) return false;
+
+    // Return false if a redeclaration is found
+    if(checkDeclarations(root)) return false;
+
+    return true; // Return true if no semantic errors are found
 }

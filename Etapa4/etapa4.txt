@@ -12,11 +12,12 @@ int y = 1;
 
 //int v[60] = 10, 20, 30, 40, 50, 60;
 
-int v[01] = 'a',04,'b',500,10,0,0,0,0,0,0;
+int v[01] = 'a',04,'b',500,10,0,0,0,0,0;
 
 // declaracao de uma matriz de 100 posicoes, nao inicializada
 
-int matrix[001]; 
+int matrix[001];
+real r[10] = 1; 
 
 
 real num = 5/7;	// note que 5/7 nao eh uma expressao, eh um literal real
