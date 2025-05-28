@@ -1,9 +1,12 @@
 #include "ast.hpp"
+#include "symbol.hpp"
 #include "parser.tab.hpp"
 #include <stdio.h>
 #include <iostream>
+#include <vector>
+#include <string>
 
-vector<string> ASTTypeNames = {
+std::vector<std::string> ASTTypeNames = {
     "UNKNOWN",
     "SYMBOL",
 
@@ -23,14 +26,14 @@ vector<string> ASTTypeNames = {
     "READ", "PRINT", "RETURN",
 };
 
-ASTNode::ASTNode(ASTNodeType type, Symbol* symbol, vector<ASTNode*> children)
+ASTNode::ASTNode(ASTNodeType type, Symbol* symbol, std::vector<ASTNode*> children)
     : type(type), children(children), symbol(symbol) {} 
 
 void ASTNode::addChild(ASTNode* child) {
     children.push_back(child);
 }
 
-vector<ASTNode*> ASTNode::getChildren() {
+std::vector<ASTNode*> ASTNode::getChildren() {
     return this->children;
 }
 
@@ -48,7 +51,7 @@ std::string getIndent(int indent) {
 
 void printAST(int level, ASTNode* node) {
     if(!node) return;
-    string indent(static_cast<size_t>(level * 2), ' ');
+    std::string indent(static_cast<size_t>(level * 2), ' ');
     fprintf(stderr, "%s%s", indent.c_str(), ASTTypeNames[static_cast<size_t>(static_cast<int>(node->getType()))].c_str());
     if (node->getSymbol())
         fprintf(stderr, " (symbol: %s)", node->getSymbol()->getLexeme().c_str());

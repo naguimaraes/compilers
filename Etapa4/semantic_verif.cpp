@@ -2,6 +2,34 @@
 #include "parser.tab.hpp"
 #include <iostream>
 
+// Convert token type to dataType
+dataType convertToDataType(int type) {
+    switch (type) {
+        case KW_BYTE:
+            return dataType::BYTE;
+        case KW_INT:
+            return dataType::INT;
+        case KW_REAL:
+            return dataType::REAL;
+        default:
+            return dataType::VOID;
+    }
+}
+
+// Convert ASTNodeType to dataType
+dataType convertToDataType(ASTNodeType typeName) {
+    switch (typeName) {
+        case ASTNodeType::BYTE:
+            return dataType::BYTE;
+        case ASTNodeType::INT:
+            return dataType::INT;
+        case ASTNodeType::REAL:
+            return dataType::REAL;
+        default:
+            return dataType::VOID;
+    }
+}
+
 bool semanticVerification(ASTNode* root) {
      // No AST to verify
     if (!root) return false;
@@ -109,17 +137,9 @@ bool isTypeCompatible(dataType expected, dataType actual) {
            (expected == dataType::REAL && (actual == dataType::BYTE || actual == dataType::INT));
 }
 
-std::string dataTypeToString(dataType type) {
-    switch (type) {
-        case dataType::BYTE: return "byte";
-        case dataType::INT: return "int";
-        case dataType::REAL: return "real";
-        case dataType::VOID: return "void";
-        default: return "unknown";
-    }
-}
-
 // ############## Verification functions ##############
+
+// Check if the vector initialization is correct
 bool checkCorrectVectorInitialization(ASTNode* vectorDeclaration) {
     // Get vector information
     ASTNodeType vectorType = vectorDeclaration->getChildren()[0]->getType(); // Vector type (first child)
@@ -175,10 +195,17 @@ bool checkCorrectVectorInitialization(ASTNode* vectorDeclaration) {
             
             // Type compatibility check
             if (!isTypeCompatible(expectedType, literalType)) {
+                const char* expectedStr = (expectedType == dataType::BYTE) ? "byte" : 
+                                        (expectedType == dataType::INT) ? "int" : 
+                                        (expectedType == dataType::REAL) ? "real" : "unknown";
+                const char* literalStr = (literalType == dataType::BYTE) ? "byte" : 
+                                       (literalType == dataType::INT) ? "int" : 
+                                       (literalType == dataType::REAL) ? "real" : "unknown";
+                
                 fprintf(stderr, "Semantic error: Vector \"%s\" of type %s cannot be initialized with value of type %s.\n", 
                         vectorSymbol->getLexeme().c_str(), 
-                        dataTypeToString(expectedType).c_str(),
-                        dataTypeToString(literalType).c_str());
+                        expectedStr,
+                        literalStr);
                 return false;
             }
         }
@@ -197,6 +224,7 @@ bool checkCorrectVectorInitialization(ASTNode* vectorDeclaration) {
     return true;
 }
 
+// Check if an identifier is redeclared
 bool checkIdentifierRedeclaration(ASTNode* declaration, identifierType idType, const char* typeName) {
     Symbol* symbol = declaration->getChildren()[1]->getSymbol(); // The second child is the name
     if(symbol == nullptr) return false;
@@ -215,14 +243,17 @@ bool checkIdentifierRedeclaration(ASTNode* declaration, identifierType idType, c
     }
 }
 
+// Check for redeclarations of vectors
 bool checkVectorRedeclaration(ASTNode* vectorDeclaration) {
     return checkIdentifierRedeclaration(vectorDeclaration, identifierType::VECTOR, "Vector");
 }
 
+// Check for redeclarations of variables
 bool checkVariableRedeclaration(ASTNode* variableDeclaration) {
     return checkIdentifierRedeclaration(variableDeclaration, identifierType::VARIABLE, "Variable");
 }
 
+// Check for redeclarations of functions
 bool checkFunctionRedeclaration(ASTNode* functionDeclaration) {
     return checkIdentifierRedeclaration(functionDeclaration, identifierType::FUNCTION, "Function");
 }

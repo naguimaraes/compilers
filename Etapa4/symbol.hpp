@@ -35,7 +35,5 @@ class Symbol {
 
 Symbol *insertSymbol(string lex, int type);
 void printSymbolTable();
-dataType convertToDataType(int type);
-dataType convertToDataType(ASTNodeType typeName);
 string invertNumberInt(string number);
 string invertNumberReal(string number);

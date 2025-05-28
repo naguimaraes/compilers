@@ -42,32 +42,6 @@ void Symbol::setIdentifierType(identifierType identifier) {
     this->identifier = identifier;
 }
 
-dataType convertToDataType(int type) {
-    switch (type) {
-        case KW_BYTE:
-            return dataType::BYTE;
-        case KW_INT:
-            return dataType::INT;
-        case KW_REAL:
-            return dataType::REAL;
-        default:
-            return dataType::VOID;
-    }
-}
-
-dataType convertToDataType(ASTNodeType typeName) {
-    switch (typeName) {
-        case ASTNodeType::BYTE:
-            return dataType::BYTE;
-        case ASTNodeType::INT:
-            return dataType::INT;
-        case ASTNodeType::REAL:
-            return dataType::REAL;
-        default:
-            return dataType::VOID;
-    }
-}
-
 Symbol *insertSymbol(string lex, int type) {
 
     if (symbolTable.find(lex) == symbolTable.end()) {
