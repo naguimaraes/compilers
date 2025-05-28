@@ -137,24 +137,17 @@ std::string dataTypeToString(dataType type) {
     }
 }
 
-
-
-
 // ############## Verification functions ##############
-bool checkVectorInitialization(ASTNode* vectorDeclaration, ASTNode* sizeNode) {
-    if (!vectorDeclaration || vectorDeclaration->getType() != ASTNodeType::VECTOR_DECLARATION) {
-        return false;
-    }
-
+bool checkVectorInitialization(ASTNode* vectorDeclaration) {
     // Get vector information
-    ASTNodeType vectorType = vectorDeclaration->getChildren()[0]->getType(); // Vector type
-    Symbol* vectorSymbol = vectorDeclaration->getChildren()[1]->getSymbol(); // Vector name
+    ASTNodeType vectorType = vectorDeclaration->getChildren()[0]->getType(); // Vector type (first child)
+    Symbol* vectorSymbol = vectorDeclaration->getChildren()[1]->getSymbol(); // Vector name (second child)
+    ASTNode* sizeNode = vectorDeclaration->getChildren()[2]; // Size node (third child)
+    // Initialization node (fourth child, if it exists)
     ASTNode* initializationNode = vectorDeclaration->getChildren().size() > 3 ? vectorDeclaration->getChildren()[3] : nullptr;
 
     // If there's no initialization, it's valid (vector will be uninitialized)
-    if (!initializationNode) {
-        return true;
-    }
+    if (!initializationNode) return true;
 
     // Get the declared vector type
     dataType expectedType = convertToDataType(vectorType);
@@ -168,41 +161,48 @@ bool checkVectorInitialization(ASTNode* vectorDeclaration, ASTNode* sizeNode) {
         return false;
     }
 
-    // Count initialized elements and check their types
-    int initCount = 1;
+    // Count initialized elements by traversing the nested structure
+    int initCount = 0;
     ASTNode* currentInit = initializationNode;
     
+    // Traverse down the nested VECTOR_INITIALIZATION structure
     while (currentInit && currentInit->getType() == ASTNodeType::VECTOR_INITIALIZATION) {
-        // Check each literal in the initialization
+        // Each VECTOR_INITIALIZATION should have at least one child (the LITERAL)
+        if (currentInit->getChildren().empty()) {
+            break;
+        }
+        
+        // Find the LITERAL in this VECTOR_INITIALIZATION node
+        ASTNode* literal = nullptr;
+        ASTNode* nextInit = nullptr;
+        
         for (ASTNode* child : currentInit->getChildren()) {
             if (child && child->getType() == ASTNodeType::LITERAL) {
-                initCount++;
-                
-                // Check if the type is compatible
-                dataType literalType = getExpressionType(child);
-                
-                // Type compatibility check
-                if (!isTypeCompatible(expectedType, literalType)) {
-                    fprintf(stderr, "Semantic error: Vector \"%s\" of type %s cannot be initialized with value of type %s.\n", 
-                            vectorSymbol->getLexeme().c_str(), 
-                            dataTypeToString(expectedType).c_str(),
-                            dataTypeToString(literalType).c_str());
-                    return false;
-                }
+                literal = child;
             } else if (child && child->getType() == ASTNodeType::VECTOR_INITIALIZATION) {
-                // Continue with nested initialization
-                currentInit = child;
-                break;
+                nextInit = child;
             }
         }
         
-        // Move to next initialization node if it exists
-        if (currentInit->getChildren().size() > 1 && 
-            currentInit->getChildren()[1]->getType() == ASTNodeType::VECTOR_INITIALIZATION) {
-            currentInit = currentInit->getChildren()[1];
-        } else {
-            break;
+        // If we found a literal, count it and check its type
+        if (literal) {
+            initCount++;
+            
+            // Check if the type is compatible
+            dataType literalType = getExpressionType(literal);
+            
+            // Type compatibility check
+            if (!isTypeCompatible(expectedType, literalType)) {
+                fprintf(stderr, "Semantic error: Vector \"%s\" of type %s cannot be initialized with value of type %s.\n", 
+                        vectorSymbol->getLexeme().c_str(), 
+                        dataTypeToString(expectedType).c_str(),
+                        dataTypeToString(literalType).c_str());
+                return false;
+            }
         }
+        
+        // Move to the next nested VECTOR_INITIALIZATION
+        currentInit = nextInit;
     }
 
     // Check if the number of initialized elements matches the vector size
@@ -288,9 +288,8 @@ bool checkDeclarations(ASTNode* root) {
             case ASTNodeType::VECTOR_DECLARATION: 
             {
                 if (checkVectorRedeclaration(child)) return true;
-
-                ASTNode* sizeNode = child->getChildren()[2]; // The third child is the size of the vector
-                if (!checkVectorInitialization(child, sizeNode)) return true; // Return error if initialization is invalid
+            
+                if (!checkVectorInitialization(child)) return true; // Return error if initialization is invalid
             }
             break;
 
