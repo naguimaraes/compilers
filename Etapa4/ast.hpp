@@ -37,19 +37,13 @@ private:
     Symbol* symbol;
 public:
     ASTNode(ASTNodeType type = ASTNodeType::UNKNOWN, Symbol* symbol = nullptr, vector<ASTNode*> children = {});
-
     void addChild(ASTNode* child);
-
     vector<ASTNode*> getChildren();
-
     Symbol* getSymbol();
-
     ASTNodeType getType();
-
 };
 
 void printAST(int level = 0, ASTNode* node = nullptr);
-
 void decompileAST(std::ofstream& outFile, ASTNode* node, int indent = 0);
 
 #endif

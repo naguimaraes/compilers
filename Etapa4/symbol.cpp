@@ -11,10 +11,67 @@ using namespace std;
 
 map<string, Symbol*> symbolTable;
 
+Symbol::Symbol(string lexeme, int type, dataType data, identifierType identifier){
+    this->lexeme = lexeme;
+    this->type = type;
+    this->data = data;
+    this->identifier = identifier;
+}
+
+string Symbol::getLexeme() {
+    return this->lexeme;
+}
+
+int Symbol::getType() {
+    return this->type;
+}
+
+dataType Symbol::getDataType() {
+    return this->data;
+}
+
+identifierType Symbol::getIdentifierType() {
+    return this->identifier;
+}
+
+void Symbol::setDataType(dataType data) {
+    this->data = data;
+}
+
+void Symbol::setIdentifierType(identifierType identifier) {
+    this->identifier = identifier;
+}
+
+dataType convertToDataType(int type) {
+    switch (type) {
+        case KW_BYTE:
+            return dataType::BYTE;
+        case KW_INT:
+            return dataType::INT;
+        case KW_REAL:
+            return dataType::REAL;
+        default:
+            return dataType::VOID;
+    }
+}
+
+dataType convertToDataType(ASTNodeType typeName) {
+    switch (typeName) {
+        case ASTNodeType::BYTE:
+            return dataType::BYTE;
+        case ASTNodeType::INT:
+            return dataType::INT;
+        case ASTNodeType::REAL:
+            return dataType::REAL;
+        default:
+            return dataType::VOID;
+    }
+}
+
 Symbol *insertSymbol(string lex, int type) {
-    
+
     if (symbolTable.find(lex) == symbolTable.end()) {
-        
+
         Symbol *s = new Symbol(lex, type);
         symbolTable[lex] = s;
 

@@ -31,15 +31,15 @@ void ASTNode::addChild(ASTNode* child) {
 }
 
 vector<ASTNode*> ASTNode::getChildren() {
-    return children;
+    return this->children;
 }
 
 Symbol* ASTNode::getSymbol() {
-    return symbol;
+    return this->symbol;
 }
 
 ASTNodeType ASTNode::getType() {
-    return type;
+    return this->type;
 }
 
 std::string getIndent(int indent) {
@@ -51,7 +51,7 @@ void printAST(int level, ASTNode* node) {
     string indent(static_cast<size_t>(level * 2), ' ');
     fprintf(stderr, "%s%s", indent.c_str(), ASTTypeNames[static_cast<size_t>(static_cast<int>(node->getType()))].c_str());
     if (node->getSymbol())
-        fprintf(stderr, " (symbol: %s)", node->getSymbol()->getLex().c_str());
+        fprintf(stderr, " (symbol: %s)", node->getSymbol()->getLexeme().c_str());
     fprintf(stderr, "\n");
     for (ASTNode* child : node->getChildren()) {
         printAST(level + 1, child);
@@ -87,7 +87,7 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
             }
             
             if (node->getChildren().size() > 1 && node->getChildren()[1] && node->getChildren()[1]->getSymbol()) {
-                outFile << node->getChildren()[1]->getSymbol()->getLex() << " = ";
+                outFile << node->getChildren()[1]->getSymbol()->getLexeme() << " = ";
             }
             
             if (node->getChildren().size() > 2) {
@@ -104,11 +104,11 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
             }
             
             if (node->getChildren().size() > 1 && node->getChildren()[1] && node->getChildren()[1]->getSymbol()) {
-                outFile << node->getChildren()[1]->getSymbol()->getLex();
+                outFile << node->getChildren()[1]->getSymbol()->getLexeme();
             }
             
             if (node->getChildren().size() > 2 && node->getChildren()[2] && node->getChildren()[2]->getSymbol()) {
-                outFile << "[" << invertNumberInt(node->getChildren()[2]->getSymbol()->getLex()) << "]";
+                outFile << "[" << invertNumberInt(node->getChildren()[2]->getSymbol()->getLexeme()) << "]";
             }
             
             if (node->getChildren().size() > 3) {
@@ -137,7 +137,7 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
             }
             
             if (node->getChildren().size() > 1 && node->getChildren()[1] && node->getChildren()[1]->getSymbol()) {
-                outFile << node->getChildren()[1]->getSymbol()->getLex();
+                outFile << node->getChildren()[1]->getSymbol()->getLexeme();
             }
             
             outFile << "(";
@@ -170,7 +170,7 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
             }
             
             if (node->getChildren().size() > 1 && node->getChildren()[1] && node->getChildren()[1]->getSymbol()) {
-                outFile << node->getChildren()[1]->getSymbol()->getLex();
+                outFile << node->getChildren()[1]->getSymbol()->getLexeme();
             }
             
             if (node->getChildren().size() > 2) {
@@ -200,7 +200,7 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
         
         case ASTNodeType::ASSIGNMENT: {
             if (!node->getChildren().empty() && node->getChildren()[0] && node->getChildren()[0]->getSymbol()) {
-                outFile << currentIndent << node->getChildren()[0]->getSymbol()->getLex();
+                outFile << currentIndent << node->getChildren()[0]->getSymbol()->getLexeme();
                 
                 if (!node->getChildren()[0]->getChildren().empty()) {
                     outFile << "[";
@@ -443,7 +443,7 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
         
         case ASTNodeType::FUNCTION_CALL: {
             if (!node->getChildren().empty() && node->getChildren()[0] && node->getChildren()[0]->getSymbol()) {
-                outFile << node->getChildren()[0]->getSymbol()->getLex();
+                outFile << node->getChildren()[0]->getSymbol()->getLexeme();
             }
             
             outFile << "(";
@@ -487,11 +487,11 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
 
 
                 if (type == LIT_INT) {
-                    outFile << invertNumberInt(symbol->getLex());
+                    outFile << invertNumberInt(symbol->getLexeme());
                 } else if (type == LIT_REAL) {
-                    outFile << invertNumberReal(symbol->getLex());
+                    outFile << invertNumberReal(symbol->getLexeme());
                 } else {
-                    outFile << symbol->getLex();
+                    outFile << symbol->getLexeme();
                 }
             }
             break;
@@ -503,11 +503,11 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
                 int type = symbol->getType();
 
                 if (type == LIT_INT) {
-                    outFile << invertNumberInt(symbol->getLex());
+                    outFile << invertNumberInt(symbol->getLexeme());
                 } else if (type == LIT_REAL) {
-                    outFile << invertNumberReal(symbol->getLex());
+                    outFile << invertNumberReal(symbol->getLexeme());
                 } else {
-                    outFile << symbol->getLex();
+                    outFile << symbol->getLexeme();
                 }
             }
             break;
@@ -517,7 +517,7 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
             outFile << currentIndent << "read ";
             
             if (!node->getChildren().empty() && node->getChildren()[0] && node->getChildren()[0]->getSymbol())
-                outFile << node->getChildren()[0]->getSymbol()->getLex();
+                outFile << node->getChildren()[0]->getSymbol()->getLexeme();
             outFile << ";\n";
             break;
         }

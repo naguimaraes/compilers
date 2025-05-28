@@ -22,29 +22,29 @@ string tokenName(int token);
 int main(int argc, char **argv){
     if (argc < 3){
         fprintf(stderr, "Arguments missing. Call: ./etapa4 input.txt output.txt\n");
-        exit(1);
+        exit(1); // Exit code 1 for missing arguments
     }
     
     if (0 == (yyin = fopen(argv[1], "r"))){
         fprintf(stderr, "File %s not found.\n", argv[1]);
-        exit(2);
+        exit(2); // Exit code 2 for file not found
     }
 
     initMe();
 
-    yyparse(); // Exit 3 if there are syntax errors
+    yyparse(); // Exit code 3 for syntax error
 
     fprintf(stderr,"The file had %d lines in total.\n", getLineNumber());
 
     //printSymbolTable();
     
-    //fprintf(stderr, "\n======== AST Structure ========\n");
-    //printAST(0, root);
+    fprintf(stderr, "\n======== AST Structure ========\n");
+    printAST(0, root);
 
     std::ofstream outFile(argv[2]);
     if (!outFile.is_open()) {
         fprintf(stderr, "File %s not found.\n", argv[2]);
-        exit(2);
+        exit(2); // Exit code 2 for file not found
     }
 
     decompileAST(outFile, root, 0);
@@ -53,7 +53,7 @@ int main(int argc, char **argv){
 
     if (!semanticVerification(root)) {
         fprintf(stderr, "Semantic verification failed.\n");
-        exit(4);
+        exit(4); // Exit code 4 for semantic error 
     }
 
     return 0;
