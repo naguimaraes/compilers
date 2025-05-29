@@ -11,11 +11,12 @@ using namespace std;
 
 map<string, Symbol*> symbolTable;
 
-Symbol::Symbol(string lexeme, int type, dataType data, identifierType identifier){
+Symbol::Symbol(string lexeme, int type, dataType data, identifierType identifier, int lineNumber){
     this->lexeme = lexeme;
     this->type = type;
     this->data = data;
     this->identifier = identifier;
+    this->lineNumber = lineNumber;
 }
 
 string Symbol::getLexeme() {
@@ -42,11 +43,19 @@ void Symbol::setIdentifierType(identifierType identifier) {
     this->identifier = identifier;
 }
 
-Symbol *insertSymbol(string lex, int type) {
+int Symbol::getLineNumber() {
+    return this->lineNumber;
+}
+
+void Symbol::setLineNumber(int lineNumber) {
+    this->lineNumber = lineNumber;
+}
+
+Symbol *insertSymbol(string lex, int type, int lineNumber) {
 
     if (symbolTable.find(lex) == symbolTable.end()) {
 
-        Symbol *s = new Symbol(lex, type);
+        Symbol *s = new Symbol(lex, type, dataType::UNDEFINED, identifierType::UNDEFINED, lineNumber);
         symbolTable[lex] = s;
 
         return s;

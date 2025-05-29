@@ -23,17 +23,20 @@ class Symbol {
         string lexeme;
         dataType data;
         identifierType identifier;
+        int lineNumber; 
     public:
-        Symbol(string lexeme, int type, dataType data = dataType::UNDEFINED, identifierType identifier = identifierType::UNDEFINED);  
+        Symbol(string lexeme, int type, dataType data = dataType::UNDEFINED, identifierType identifier = identifierType::UNDEFINED, int lineNumber = 1);  
         string getLexeme();
         int getType();
         dataType getDataType();
         void setDataType(dataType data);
         identifierType getIdentifierType();
         void setIdentifierType(identifierType identifier);
+        int getLineNumber();
+        void setLineNumber(int lineNumber);
 };
 
-Symbol *insertSymbol(string lex, int type);
+Symbol *insertSymbol(string lex, int type, int lineNumber = 1);
 void printSymbolTable();
 string invertNumberInt(string number);
 string invertNumberReal(string number);

@@ -242,6 +242,7 @@ flux_control
 %%
 
 void yyerror(string s){
+    s[0] = static_cast<char>(toupper(static_cast<unsigned char>(s[0])));
     fprintf(stderr, "%s at line %d.\n", s.c_str(), getLineNumber());
     exit(3);
 }

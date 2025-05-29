@@ -52,7 +52,7 @@ dataType getExpressionType(ASTNode* expression) {
                 } else if (tokenType == LIT_REAL) {
                     return dataType::REAL;
                 } else if (tokenType == LIT_CHAR) {
-                    return dataType::BYTE;
+                    return dataType::CHAR;
                 } else if (tokenType == TK_IDENTIFIER) {
                     // For identifiers, get their declared data type
                     return symbol->getDataType();
@@ -135,9 +135,28 @@ bool isTypeCompatible(dataType expected, dataType actual) {
     return false;
 }
 
+const char* dataTypeToString(dataType type) {
+    switch (type) {
+        case dataType::BYTE:
+            return "byte";
+        case dataType::INT:
+            return "int";
+        case dataType::REAL:
+            return "real";
+        case dataType::VOID:
+            return "void";
+        case dataType::CHAR:
+            return "char";
+        case dataType::STRING:
+            return "string";
+        default:
+            return "unknown";
+    }
+}
+
 // ############## Verification functions ##############
 
-// Check if the vector initialization is correct
+// If the vector is correctly initialized, this function will return true
 bool checkCorrectVectorInitialization(ASTNode* vectorDeclaration) {
     // Get vector information
     ASTNodeType vectorType = vectorDeclaration->getChildren()[0]->getType(); // Vector type (first child)
@@ -192,18 +211,12 @@ bool checkCorrectVectorInitialization(ASTNode* vectorDeclaration) {
             dataType literalType = getExpressionType(literal);
             
             // Type compatibility check
-            if (!isTypeCompatible(expectedType, literalType)) {
-                const char* expectedStr = (expectedType == dataType::BYTE) ? "byte" : 
-                                        (expectedType == dataType::INT) ? "int" : 
-                                        (expectedType == dataType::REAL) ? "real" : "unknown";
-                const char* literalStr = (literalType == dataType::BYTE) ? "byte" : 
-                                       (literalType == dataType::INT) ? "int" : 
-                                       (literalType == dataType::REAL) ? "real" : "unknown";
-                
-                fprintf(stderr, "Semantic error: Vector \"%s\" of type %s cannot be initialized with value of type %s.\n", 
+            if (!isTypeCompatible(expectedType, literalType)) {            
+                fprintf(stderr, "Semantic error at line %d: Vector \"%s\" of type %s cannot be initialized with value of type %s.\n", 
+                        literal->getSymbol()->getLineNumber(),
                         vectorSymbol->getLexeme().c_str(), 
-                        expectedStr,
-                        literalStr);
+                        dataTypeToString(expectedType),
+                        dataTypeToString(literalType));
                 return false;
             }
         }
@@ -214,15 +227,15 @@ bool checkCorrectVectorInitialization(ASTNode* vectorDeclaration) {
 
     // Check if the number of initialized elements matches the vector size
     if (initCount != vectorSize) {
-        fprintf(stderr, "Semantic error: Vector \"%s\" declared with size %d but initialized with %d elements.\n", 
-                vectorSymbol->getLexeme().c_str(), vectorSize, initCount);
+        fprintf(stderr, "Semantic error at line %d: Vector \"%s\" declared with size %d but initialized with %d elements.\n", 
+                vectorSymbol->getLineNumber(), vectorSymbol->getLexeme().c_str(), vectorSize, initCount);
         return false;
     }
 
     return true;
 }
 
-// Check if an identifier (variable, vector or function) is redeclared
+// If the identifier is already declared, this function will return true
 bool checkRedeclaration(ASTNode* declaration, identifierType identifierType, const char* typeName) {
     Symbol* symbol = declaration->getChildren()[1]->getSymbol(); // The second child is the name of the identifier
     if(symbol == nullptr) return false;
@@ -236,11 +249,84 @@ bool checkRedeclaration(ASTNode* declaration, identifierType identifierType, con
         return false;
     } else {
         // Already declared
-        fprintf(stderr, "Semantic error: %s \"%s\" was redeclared.\n", typeName, symbol->getLexeme().c_str());
+        fprintf(stderr, "Semantic error at line %d: %s \"%s\" was redeclared.\n", 
+                symbol->getLineNumber(), typeName, symbol->getLexeme().c_str());
         return true;
     }
 }
 
+// If the function has problems with parameters, this function will return true
+bool checkParameters(ASTNode* functionDeclaration) {
+    // Get the function name
+    Symbol* functionSymbol = functionDeclaration->getChildren()[1]->getSymbol();
+    if (!functionSymbol) return false;
+
+    // Check if the function has parameters
+    ASTNode* formalParameters = functionDeclaration->getChildren().size() > 2 ? functionDeclaration->getChildren()[2] : nullptr;
+
+    if (!formalParameters || formalParameters->getType() != ASTNodeType::FORMAL_PARAMETERS) {
+        return false; // No parameters or invalid parameter node
+    }
+
+    // Get the first PARAMETERS_LIST node
+    ASTNode* currentParamList = nullptr;
+    for (ASTNode* child : formalParameters->getChildren()) {
+        if (child && child->getType() == ASTNodeType::PARAMETERS_LIST) {
+            currentParamList = child;
+            break;
+        }
+    }
+
+    // Traverse the nested PARAMETERS_LIST structure
+    while (currentParamList && currentParamList->getType() == ASTNodeType::PARAMETERS_LIST) {
+        auto children = currentParamList->getChildren();
+        
+        // Each PARAMETERS_LIST should have: type, symbol, and optionally another PARAMETERS_LIST
+        if (children.size() < 2) break;
+        
+        ASTNode* typeNode = nullptr;
+        ASTNode* symbolNode = nullptr;
+        ASTNode* nextParamList = nullptr;
+
+        // Find type, symbol, and next parameter list
+        for (ASTNode* child : children) {
+            if (!child) continue;
+            
+            if (child->getType() == ASTNodeType::INT || 
+                child->getType() == ASTNodeType::BYTE || 
+                child->getType() == ASTNodeType::REAL) {
+                typeNode = child;
+            } else if (child->getType() == ASTNodeType::SYMBOL) {
+                symbolNode = child;
+            } else if (child->getType() == ASTNodeType::PARAMETERS_LIST) {
+                nextParamList = child;
+            }
+        }
+        
+        // If we found both type and symbol, process this parameter
+        if (typeNode && symbolNode && symbolNode->getSymbol()) {
+            Symbol* paramSymbol = symbolNode->getSymbol();
+            
+            // Check if parameter is already declared
+            if (paramSymbol->getIdentifierType() != identifierType::UNDEFINED) {
+                fprintf(stderr, "Semantic error at line %d: Parameter \"%s\" was redeclared.\n", 
+                        paramSymbol->getLineNumber(), paramSymbol->getLexeme().c_str());
+                return true;
+            } else {
+                // Initialize the parameter
+                paramSymbol->setIdentifierType(identifierType::VARIABLE);
+                paramSymbol->setDataType(convertToDataType(typeNode->getType()));
+            }
+        }
+
+        // Move to the next nested PARAMETERS_LIST
+        currentParamList = nextParamList;
+    }
+
+    return false; // No redeclared parameter found
+}
+
+// If there are problems with declarations, this function will return true
 bool checkDeclarations(ASTNode* root) {
     for (ASTNode* child : root->getChildren()) {
         if (!child) continue; // Skip null children
@@ -254,8 +340,8 @@ bool checkDeclarations(ASTNode* root) {
                 if (checkRedeclaration(child, identifierType::VECTOR, "Vector") || !checkCorrectVectorInitialization(child)) return true;
                 break;
 
-            case ASTNodeType::FUNCTION_DECLARATION: 
-                if (checkRedeclaration(child, identifierType::FUNCTION, "Function")) return true;
+            case ASTNodeType::FUNCTION_DECLARATION:
+                if (checkRedeclaration(child, identifierType::FUNCTION, "Function") || checkParameters(child) ) return true;
                 break;
 
             // Recursively check children with the same set
@@ -268,14 +354,34 @@ bool checkDeclarations(ASTNode* root) {
     return false; // No redeclared variable found in this subtree
 }
 
+// If there are undeclared identifiers, this function will return true
+bool checkUndeclaredIdentifiers(ASTNode* root) {
+    for (ASTNode* child : root->getChildren()) {
+        if (!child) continue; // Skip null children
+
+        if(child->getType() == ASTNodeType::SYMBOL) {
+            if(child->getSymbol()->getDataType() == dataType::UNDEFINED) {
+                fprintf(stderr, "Semantic error at line %d: Identifier \"%s\" is undeclared.\n", 
+                        child->getSymbol()->getLineNumber(), child->getSymbol()->getLexeme().c_str());
+                return true; // Found an undeclared identifier
+            }
+        }
+        // Recursively check children
+        if (checkUndeclaredIdentifiers(child)) {
+            return true; // Propagate the error up
+        }
+    }
+
+    return false; // No undeclared identifiers found
+}
 
 // Main semantic verification function
 bool semanticVerification(ASTNode* root) {
      // No AST to verify
     if (!root) return false;
 
-    // Return false if a redeclaration is found
-    if(checkDeclarations(root)) return false;
+    // Return false if any errors were found
+    if(checkDeclarations(root) || checkUndeclaredIdentifiers(root)) return false;
 
     return true; // Return true if no semantic errors are found
 }
