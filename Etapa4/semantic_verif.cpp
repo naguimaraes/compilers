@@ -1,6 +1,7 @@
 #include "semantic_verif.hpp"
 #include "parser.tab.hpp"
 #include <iostream>
+#include <functional>
 
 // ############## Auxiliary functions ##############
 
@@ -235,37 +236,56 @@ bool checkCorrectVectorInitialization(ASTNode* vectorDeclaration) {
     return true;
 }
 
-// If the identifier is already declared, this function will return true
-bool checkRedeclaration(ASTNode* declaration, identifierType identifierType, const char* typeName) {
+// If the identifier is already declared, this function will return the number of errors (0 or 1)
+int checkRedeclaration(ASTNode* declaration, identifierType expectedIdentifierType, const char* typeName) {
     Symbol* symbol = declaration->getChildren()[1]->getSymbol(); // The second child is the name of the identifier
-    if(symbol == nullptr) return false;
+    if(symbol == nullptr) return 0;
 
     ASTNodeType type = declaration->getChildren()[0]->getType(); // The first child is the type of the identifier
 
     // Check if the symbol is already declared
-    if (symbol->getIdentifierType() != identifierType) {
-        symbol->setIdentifierType(identifierType); // First encounter, set the identifier type
-        symbol->setDataType(convertToDataType(type)); // Set the data type
-        return false;
+    if (symbol->getIdentifierType() == identifierType::UNDEFINED) {
+        // First encounter, set the identifier type and data type
+        symbol->setIdentifierType(expectedIdentifierType);
+        symbol->setDataType(convertToDataType(type));
+        return 0;
     } else {
-        // Already declared
-        fprintf(stderr, "Semantic error at line %d: %s \"%s\" was redeclared.\n", 
-                symbol->getLineNumber(), typeName, symbol->getLexeme().c_str());
-        return true;
+        // Already declared - report error using the line number stored in the symbol
+        // This line number corresponds to the redeclaration line, not the first declaration
+        int firstDeclarationLine = symbol->getLineNumber();
+        
+        // We need to report this as a redeclaration. However, the symbol's line number
+        // is from the first encounter. We need to find a way to get the current line.
+        // For now, we'll create a temporary approach by examining if we can get line info
+        // from the literal or other children of the declaration
+        int currentDeclarationLine = firstDeclarationLine;
+        
+        // Try to get line number from the literal (third child) if it exists
+        if (declaration->getChildren().size() > 2 && 
+            declaration->getChildren()[2] && 
+            declaration->getChildren()[2]->getSymbol()) {
+            currentDeclarationLine = declaration->getChildren()[2]->getSymbol()->getLineNumber();
+        }
+        
+        fprintf(stderr, "Semantic error at line %d: %s \"%s\" was redeclared (first declared at line %d).\n", 
+                currentDeclarationLine, typeName, symbol->getLexeme().c_str(), firstDeclarationLine);
+        return 1;
     }
 }
 
-// If the function has problems with parameters, this function will return true
-bool checkParameters(ASTNode* functionDeclaration) {
+// If the function has problems with parameters, this function will return the number of errors
+int checkParameters(ASTNode* functionDeclaration) {
     // Get the function name
     Symbol* functionSymbol = functionDeclaration->getChildren()[1]->getSymbol();
-    if (!functionSymbol) return false;
+    if (!functionSymbol) return 0;
+
+    int errorCount = 0;
 
     // Check if the function has parameters
     ASTNode* formalParameters = functionDeclaration->getChildren().size() > 2 ? functionDeclaration->getChildren()[2] : nullptr;
 
     if (!formalParameters || formalParameters->getType() != ASTNodeType::FORMAL_PARAMETERS) {
-        return false; // No parameters or invalid parameter node
+        return 0; // No parameters or invalid parameter node
     }
 
     // Get the first PARAMETERS_LIST node
@@ -311,7 +331,7 @@ bool checkParameters(ASTNode* functionDeclaration) {
             if (paramSymbol->getIdentifierType() != identifierType::UNDEFINED) {
                 fprintf(stderr, "Semantic error at line %d: Parameter \"%s\" was redeclared.\n", 
                         paramSymbol->getLineNumber(), paramSymbol->getLexeme().c_str());
-                return true;
+                errorCount++;
             } else {
                 // Initialize the parameter
                 paramSymbol->setIdentifierType(identifierType::VARIABLE);
@@ -323,39 +343,45 @@ bool checkParameters(ASTNode* functionDeclaration) {
         currentParamList = nextParamList;
     }
 
-    return false; // No redeclared parameter found
+    return errorCount;
 }
 
-// If there are problems with declarations, this function will return true
-bool checkDeclarations(ASTNode* root) {
+// If there are problems with declarations, this function will return the number of errors
+int checkDeclarations(ASTNode* root) {
+    int errorCount = 0;
+    
     for (ASTNode* child : root->getChildren()) {
         if (!child) continue; // Skip null children
 
         switch (child->getType()) {
             case ASTNodeType::VARIABLE_DECLARATION: 
-                if (checkRedeclaration(child, identifierType::VARIABLE, "Variable")) return true;
+                errorCount += checkRedeclaration(child, identifierType::VARIABLE, "Variable");
                 break;
 
             case ASTNodeType::VECTOR_DECLARATION: 
-                if (checkRedeclaration(child, identifierType::VECTOR, "Vector") || !checkCorrectVectorInitialization(child)) return true;
+                errorCount += checkRedeclaration(child, identifierType::VECTOR, "Vector");
+                if (!checkCorrectVectorInitialization(child)) errorCount++;
                 break;
 
             case ASTNodeType::FUNCTION_DECLARATION:
-                if (checkRedeclaration(child, identifierType::FUNCTION, "Function") || checkParameters(child) ) return true;
+                errorCount += checkRedeclaration(child, identifierType::FUNCTION, "Function");
+                errorCount += checkParameters(child);
                 break;
 
-            // Recursively check children with the same set
+            // Recursively check children
             default:
-                if (checkDeclarations(child)) return true; // Propagate the error up
+                errorCount += checkDeclarations(child);
                 break;
         }
     }
     
-    return false; // No redeclared variable found in this subtree
+    return errorCount;
 }
 
-// If there are undeclared identifiers, this function will return true
-bool checkUndeclaredIdentifiers(ASTNode* root) {
+// If there are undeclared identifiers, this function will return the number of errors
+int checkUndeclaredIdentifiers(ASTNode* root) {
+    int errorCount = 0;
+    
     for (ASTNode* child : root->getChildren()) {
         if (!child) continue; // Skip null children
 
@@ -363,25 +389,190 @@ bool checkUndeclaredIdentifiers(ASTNode* root) {
             if(child->getSymbol()->getDataType() == dataType::UNDEFINED) {
                 fprintf(stderr, "Semantic error at line %d: Identifier \"%s\" is undeclared.\n", 
                         child->getSymbol()->getLineNumber(), child->getSymbol()->getLexeme().c_str());
-                return true; // Found an undeclared identifier
+                errorCount++;
             }
         }
         // Recursively check children
-        if (checkUndeclaredIdentifiers(child)) {
-            return true; // Propagate the error up
+        errorCount += checkUndeclaredIdentifiers(child);
+    }
+
+    return errorCount;
+}
+
+// Helper function to check return statements in a function body
+int checkReturnStatementsInFunction(ASTNode* functionBody, dataType expectedReturnType, const std::string& functionName, int functionLine) {
+    if (!functionBody) return 0;
+
+    int errorCount = 0;
+
+    // Traverse all children of the function body
+    for (ASTNode* child : functionBody->getChildren()) {
+        if (!child) continue;
+
+        switch (child->getType()) {
+            case ASTNodeType::RETURN:
+            {
+                // Check if the return statement has an expression
+                if (!child->getChildren().empty() && child->getChildren()[0]) {
+                    ASTNode* returnExpression = child->getChildren()[0];
+                    dataType actualReturnType = getExpressionType(returnExpression);
+                    
+                    // Check if the return type is compatible with the declared function type
+                    if (!isTypeCompatible(expectedReturnType, actualReturnType)) {
+                        fprintf(stderr, "Semantic error at line %d: Function \"%s\" declared as %s but returns %s.\n",
+                                functionLine,
+                                functionName.c_str(),
+                                dataTypeToString(expectedReturnType),
+                                dataTypeToString(actualReturnType));
+                        errorCount++;
+                    }
+                } else {
+                    // Return statement without expression (void return)
+                    if (expectedReturnType != dataType::VOID) {
+                        fprintf(stderr, "Semantic error at line %d: Function \"%s\" declared as %s but has void return.\n",
+                                functionLine,
+                                functionName.c_str(),
+                                dataTypeToString(expectedReturnType));
+                        errorCount++;
+                    }
+                }
+                break;
+            }
+            
+            // Recursively check nested blocks and control structures
+            case ASTNodeType::COMMAND:
+            case ASTNodeType::COMMAND_LIST:
+            case ASTNodeType::IF:
+            case ASTNodeType::ELSE:
+            case ASTNodeType::WHILE_DO:
+            case ASTNodeType::DO_WHILE:
+            {
+                errorCount += checkReturnStatementsInFunction(child, expectedReturnType, functionName, functionLine);
+                break;
+            }
+            
+            default:
+                // For other node types, recursively check their children
+                errorCount += checkReturnStatementsInFunction(child, expectedReturnType, functionName, functionLine);
+                break;
         }
     }
 
-    return false; // No undeclared identifiers found
+    return errorCount;
+}
+
+// If there are problems with function return types, this function will return the number of errors
+int checkFunctionReturnTypes(ASTNode* root) {
+    if (!root) return 0;
+
+    int errorCount = 0;
+
+    for (ASTNode* child : root->getChildren()) {
+        if (!child) continue;
+
+        switch (child->getType()) {
+            case ASTNodeType::FUNCTION_DECLARATION:
+            {
+                // Get function information
+                if (child->getChildren().size() < 2) break;
+                
+                ASTNode* returnTypeNode = child->getChildren()[0]; // Function return type
+                ASTNode* functionNameNode = child->getChildren()[1]; // Function name
+                ASTNode* functionBody = child->getChildren().size() > 3 ? child->getChildren()[3] : nullptr; // Function body
+                
+                if (!returnTypeNode || !functionNameNode || !functionNameNode->getSymbol()) break;
+                
+                dataType expectedReturnType = convertToDataType(returnTypeNode->getType());
+                std::string functionName = functionNameNode->getSymbol()->getLexeme();
+                
+                // Get the line number from the function declaration itself
+                // We need to find the line number where the function is actually declared
+                // Try to get it from any child node that has a symbol with line information
+                int functionLine = functionNameNode->getSymbol()->getLineNumber();
+                
+                // Try to get a more accurate line number from the function body or parameters
+                if (child->getChildren().size() > 2 && child->getChildren()[2]) {
+                    // Check formal parameters for line info
+                    ASTNode* formalParams = child->getChildren()[2];
+                    if (formalParams->getType() == ASTNodeType::FORMAL_PARAMETERS) {
+                        // Look for parameter symbols that might have the correct line
+                        std::function<int(ASTNode*)> findLatestLine = [&](ASTNode* node) -> int {
+                            int latestLine = functionLine;
+                            if (!node) return latestLine;
+                            
+                            if (node->getSymbol() && node->getSymbol()->getLineNumber() > latestLine) {
+                                latestLine = node->getSymbol()->getLineNumber();
+                            }
+                            
+                            for (ASTNode* childNode : node->getChildren()) {
+                                int childLine = findLatestLine(childNode);
+                                if (childLine > latestLine) {
+                                    latestLine = childLine;
+                                }
+                            }
+                            return latestLine;
+                        };
+                        
+                        int paramLine = findLatestLine(formalParams);
+                        if (paramLine > functionLine) {
+                            functionLine = paramLine;
+                        }
+                    }
+                }
+                
+                // If we still have the original line, try to get line from function body
+                if (functionBody && functionLine == functionNameNode->getSymbol()->getLineNumber()) {
+                    std::function<int(ASTNode*)> findFirstLine = [&](ASTNode* node) -> int {
+                        if (!node) return functionLine;
+                        
+                        if (node->getSymbol() && node->getSymbol()->getLineNumber() > functionLine) {
+                            return node->getSymbol()->getLineNumber();
+                        }
+                        
+                        for (ASTNode* childNode : node->getChildren()) {
+                            int childLine = findFirstLine(childNode);
+                            if (childLine > functionLine) {
+                                return childLine;
+                            }
+                        }
+                        return functionLine;
+                    };
+                    
+                    int bodyLine = findFirstLine(functionBody);
+                    if (bodyLine > functionLine) {
+                        functionLine = bodyLine;
+                    }
+                }
+                
+                // Check all return statements in the function body
+                if (functionBody) {
+                    errorCount += checkReturnStatementsInFunction(functionBody, expectedReturnType, functionName, functionLine);
+                }
+                break;
+            }
+            
+            // Recursively check other nodes (but not their function bodies, as we handle those above)
+            default:
+                if (child->getType() != ASTNodeType::FUNCTION_DECLARATION) {
+                    errorCount += checkFunctionReturnTypes(child);
+                }
+                break;
+        }
+    }
+
+    return errorCount;
 }
 
 // Main semantic verification function
-bool semanticVerification(ASTNode* root) {
+int semanticVerification(ASTNode* root) {
      // No AST to verify
-    if (!root) return false;
+    if (!root) return 0;
 
-    // Return false if any errors were found
-    if(checkDeclarations(root) || checkUndeclaredIdentifiers(root)) return false;
+    // Collect all errors instead of stopping at the first one
+    int declarationErrors = checkDeclarations(root);
+    int undeclaredErrors = checkUndeclaredIdentifiers(root);
+    int returnTypeErrors = checkFunctionReturnTypes(root);
 
-    return true; // Return true if no semantic errors are found
+    // Return total number of errors found
+    return declarationErrors + undeclaredErrors + returnTypeErrors;
 }

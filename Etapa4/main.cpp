@@ -38,8 +38,8 @@ int main(int argc, char **argv){
 
     //printSymbolTable();
     
-    fprintf(stderr, "\n======== AST Structure ========\n");
-    printAST(0, root);
+    //fprintf(stderr, "\n======== AST Structure ========\n");
+    //printAST(0, root);
 
     std::ofstream outFile(argv[2]);
     if (!outFile.is_open()) {
@@ -49,10 +49,15 @@ int main(int argc, char **argv){
 
     decompileAST(outFile, root, 0);
     outFile.close();
-    fprintf(stderr, "Decompiled code can be found in file \"%s\".\n", argv[2]);
+    fprintf(stderr, "\nDecompiled code can be found in file \"%s\".\n\n", argv[2]);
 
-    if (!semanticVerification(root)) {
+    int semanticErrors = semanticVerification(root);
+    
+    if (semanticErrors > 0) {
+        fprintf(stderr, "Semantic analysis completed with %d error(s).\n", semanticErrors);
         exit(4); // Exit code 4 for semantic error 
+    } else {
+        fprintf(stderr, "Semantic analysis completed successfully - no errors found.\n");
     }
 
     return 0;

@@ -19,7 +19,6 @@ int v[01] = 'a',04,'b',500,10,0,0,0,0,7;
 int matrix[001];
 real r[10] = 1/2; 
 
-
 real num = 5/7;	// note que 5/7 nao eh uma expressao, eh um literal real
 
 /--
@@ -28,6 +27,7 @@ de multiplas
 linhas
 --/
 
+  
 int main ()
   {
   number = 0;
@@ -70,10 +70,9 @@ int main ()
   {{}} {}
   }
 
-int incn (int p, int n)
+  int incn (int p, int n)
   {
-  return p + n;
+  return  5/7;
   }
-  
 
 // end of file

@@ -2,4 +2,4 @@
 #include "symbol.hpp"
 #include <set>
 
-bool semanticVerification(ASTNode* root);
+int semanticVerification(ASTNode* root);
