@@ -8,7 +8,7 @@
 #include "parser.tab.hpp"
 #include "symbol.hpp"
 #include "ast.hpp"
-#include "semantic_verif.hpp"
+#include "verifications.hpp"
 
 int yyparse();
 extern char *yytext;
