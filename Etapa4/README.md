@@ -1,16 +1,26 @@
-# Stage 3 - Abstract Syntax Tree (AST)
+# Stage 4 - Semantic Verification
 
-## Abstract Syntax Tree (AST)
+## Semantic Verification
 
-An Abstract Syntax Tree (AST) is a tree representation of the syntactic structure of source code. Each node in the tree represents a construct occurring in the source code, such as expressions, statements, or declarations. The AST abstracts away syntactic details like parentheses or semicolons, focusing on the hierarchical structure of the code.
+Semantic verification is the phase of compilation that ensures the code adheres to the language's semantic rules. While syntax analysis confirms the code follows grammatical rules, semantic verification ensures operations are meaningful and consistent. This stage checks for issues like type compatibility, undeclared variables, and redeclarations.
 
-### Construction of the AST
+### Implementation of Semantic Verification
 
-The AST is constructed during the parsing phase of compilation. The parser processes the source code according to the grammar rules defined in `parser.ypp` and generates the corresponding tree structure. The nodes of the AST are implemented in `ast.hpp` and `ast.cpp`, where each type of node corresponds to a specific language construct.
+The semantic analyzer, implemented in `verifications.cpp` and `verifications.hpp`, performs several checks on the Abstract Syntax Tree (AST) constructed during the parsing phase:
 
-### Decompilation of the AST
+1. **Variable and Function Declarations**: Ensures all identifiers are properly declared before use and detects redeclarations.
+2. **Type Checking**: Verifies type compatibility in expressions, assignments, and function calls.
+3. **Vector Access Validation**: Checks that vector indices are of appropriate types.
+4. **Function Return Types**: Ensures return statements match the declared function return type.
+5. **Function Parameter Consistency**: Validates that function calls provide the correct number and types of arguments.
 
-Decompilation involves traversing the AST to regenerate source code that is semantically equivalent to the original. This process ensures that the structure and meaning of the code are preserved. The decompiled code is written to the output file specified during execution, allowing verification of the correctness of the AST and its transformations.
+### Error Reporting
+
+When semantic errors are detected, detailed error messages are generated that include:
+
+- Line number where the error occurred
+- Description of the error
+- Contextual information (e.g., variable names, expected vs. actual types)
 
 ## Project Compilation and Execution
 
@@ -29,23 +39,36 @@ make run
 or
 
 ```bash
-./etapa3 input.txt output.txt
+./etapa4 input.txt output.txt
 ```
 
 Where:
 
-- `input.txt` is the file with 2025++1 source code. A sample input file is provided in the repository, named `etapa3.txt`.
+- `input.txt` is the file with 2025++1 source code. A sample input file is provided in the repository, named `etapa4.txt`.
 - `output.txt` is the file where the decompiled code will be written
 
-## Decompilation Verification
+The compiler will perform both syntactic analysis and semantic verification. If semantic errors are detected, detailed error messages will be displayed, and the program will exit with code 4.
 
-To test if the decompilation is correct:
+## Semantic Analysis Testing
+
+To test both the decompilation and semantic verification:
 
 ```bash
 make test
 ```
 
-This command compiles the original code, then compiles the decompiled code and verifies if both produce equivalent ASTs.
+This command compiles the original code, verifies its semantics, then compiles the decompiled code and checks if both produce equivalent ASTs and semantic verification results.
+
+## Error Cases
+
+The semantic analyzer can detect and report various types of errors:
+
+1. **Type Mismatches**: When expressions or assignments involve incompatible types.
+2. **Undeclared Identifiers**: When variables, vectors, or functions are used without declaration.
+3. **Redeclarations**: When an identifier is declared multiple times in the same scope.
+4. **Invalid Vector Operations**: Improper index types or out-of-bounds access.
+5. **Function Call Errors**: Wrong number of arguments or type mismatches.
+6. **Return Statement Errors**: Missing return statements or type mismatches.
 
 ## Cleaning the Project
 
@@ -62,7 +85,8 @@ This command will remove all object files, the executable, and any other generat
 - `scanner.l`: Lexical analyzer specification
 - `parser.ypp`: Syntactic analyzer grammar
 - `ast.hpp` and `ast.cpp`: Abstract Syntax Tree implementation
-- `symbol.hpp` and `symbol.cpp`: Symbol table management
-- `main.cpp`: Program entry point
+- `symbol.hpp` and `symbol.cpp`: Symbol table management with enhanced type support
+- `verifications.hpp` and `verifications.cpp`: Semantic verification implementation
+- `main.cpp`: Program entry point with semantic verification integration
 - `Makefile`: Compilation instructions
-- `spect3.pdf`: PDF with the specification of this stage, in portuguese
+- `spect4.pdf`: PDF with the specification of this stage, in Portuguese

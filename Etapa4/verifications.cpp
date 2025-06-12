@@ -1,3 +1,6 @@
+// Federal University of Rio Grande do Sul - Institute of Informatics - Compilers 2025/1
+// File verifications.cpp made by Nathan Guimaraes (334437)
+
 #include "verifications.hpp"
 #include "parser.tab.hpp"
 #include <iostream>
