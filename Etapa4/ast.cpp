@@ -9,19 +9,19 @@
 std::vector<std::string> ASTTypeNames = {
     "UNKNOWN",
     "SYMBOL",
-
+    
     "DECLARATION_LIST",
     "VARIABLE_DECLARATION",
-    "VECTOR_DECLARATION", "VECTOR_INITIALIZATION",
-    "FUNCTION_DECLARATION", "PARAMETERS_LIST", "FUNCTION_CALL", "FORMAL_PARAMETERS",
+    "VECTOR_DECLARATION", "VECTOR_INITIALIZATION", "VECTOR_ACCESS", // Added VECTOR_ACCESS
+    "EXPRESSION_LIST", "ARGUMENTS_LIST", "FUNCTION_DECLARATION", "PARAMETERS_LIST", "FUNCTION_CALL", "FORMAL_PARAMETERS",
     "COMMAND", "COMMAND_LIST",
     "ASSIGNMENT",
 
     "ADD", "SUBTRACT", "MULTIPLY", "DIVIDE", "MODULO",
     "AND", "OR", "NOT",
     "LESS_THAN", "GREATER_THAN", "LESS_EQUAL", "GREATER_EQUAL", "EQUAL", "DIFFERENT",
-    
-    "BYTE", "INT", "REAL", "LITERAL",
+
+    "BYTE", "INT", "REAL", "CHAR", "LITERAL",
     "IF", "ELSE", "WHILE_DO", "DO_WHILE",
     "READ", "PRINT", "RETURN",
 };
@@ -197,6 +197,26 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
         case ASTNodeType::COMMAND_LIST: {
             for (ASTNode* child : node->getChildren()) {
                 decompileAST(outFile, child, indent);
+            }
+            break;
+        }
+        
+        case ASTNodeType::EXPRESSION_LIST: {
+            bool first = true;
+            for (ASTNode* child : node->getChildren()) {
+                if (!first) outFile << ", ";
+                first = false;
+                decompileAST(outFile, child, 0);
+            }
+            break;
+        }
+        
+        case ASTNodeType::ARGUMENTS_LIST: {
+            bool first = true;
+            for (ASTNode* child : node->getChildren()) {
+                if (!first) outFile << ", ";
+                first = false;
+                decompileAST(outFile, child, 0);
             }
             break;
         }
@@ -452,16 +472,7 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
             outFile << "(";
             
             if (node->getChildren().size() > 1 && node->getChildren()[1]) {
-                if (node->getChildren()[1]->getType() == ASTNodeType::COMMAND_LIST) {
-                    bool first = true;
-                    for (ASTNode* arg : node->getChildren()[1]->getChildren()) {
-                        if (!first) outFile << ", ";
-                        first = false;
-                        decompileAST(outFile, arg, 0);
-                    }
-                } else {
-                    decompileAST(outFile, node->getChildren()[1], 0);
-                }
+                decompileAST(outFile, node->getChildren()[1], 0);
             }
             
             outFile << ")";

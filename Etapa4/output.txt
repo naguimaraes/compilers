@@ -1,8 +1,0 @@
-int x = 5;
-int y = 10;
-int x = 15;
-byte a = 'a';
-byte a = 'b';
-int main() {
-	return 0;
-}

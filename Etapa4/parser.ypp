@@ -168,7 +168,7 @@ command
 
 assignment
     : TK_IDENTIFIER '=' expression                                           { $$ = new ASTNode(ASTNodeType::ASSIGNMENT); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
-    | TK_IDENTIFIER '[' expression ']' '=' expression                        { $$ = new ASTNode(ASTNodeType::ASSIGNMENT); ASTNode* identNode = new ASTNode(ASTNodeType::SYMBOL, $1); identNode->addChild($3); $$->addChild(identNode); if ($6 != nullptr) $$->addChild($6); }
+    | TK_IDENTIFIER '[' expression ']' '=' expression                        { $$ = new ASTNode(ASTNodeType::ASSIGNMENT); ASTNode* vecAccess = new ASTNode(ASTNodeType::VECTOR_ACCESS); vecAccess->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); vecAccess->addChild($3); $$->addChild(vecAccess); if ($6 != nullptr) $$->addChild($6); }
     ;
 
 read
@@ -206,7 +206,7 @@ expression
     | expression OPERATOR_EQ expression                                      { $$ = new ASTNode(ASTNodeType::EQUAL); $$->addChild($1); $$->addChild($3); }
     | '~' expression                                                         { $$ = new ASTNode(ASTNodeType::NOT); $$->addChild($2); }
     | '(' expression ')'                                                     { $$ = $2; }
-    | TK_IDENTIFIER '[' expression ']'                                       { $$ = new ASTNode(ASTNodeType::SYMBOL, $1); $$->addChild($3); }
+    | TK_IDENTIFIER '[' expression ']'                                       { $$ = new ASTNode(ASTNodeType::VECTOR_ACCESS); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); $$->addChild($3); }
     | function_call                                                          { $$ = $1; }
     | factor                                                                 { $$ = $1; }
     ;
@@ -223,12 +223,12 @@ factor
     ;
 
 arguments_list
-    : expression_list                                                        { $$ = $1; }
+    : expression_list                                                        { $$ = new ASTNode(ASTNodeType::ARGUMENTS_LIST); if ($1 != nullptr) $$->addChild($1); }
     | %empty                                                                 { $$ = nullptr; }
     ;
 
 expression_list
-    : expression ',' expression_list                                         { $$ = new ASTNode(ASTNodeType::COMMAND_LIST); $$->addChild($1); if ($3 != nullptr) $$->addChild($3); }
+    : expression ',' expression_list                                         { $$ = new ASTNode(ASTNodeType::EXPRESSION_LIST); $$->addChild($1); if ($3 != nullptr) $$->addChild($3); }
     | expression                                                             { $$ = $1; }
     ;
 

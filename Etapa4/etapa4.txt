@@ -72,7 +72,7 @@ int main ()
 
   int incn (int p, int n)
   {
-  return  5/7;
+  return  p+n;
   }
 
 // end of file
