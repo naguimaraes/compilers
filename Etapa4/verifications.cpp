@@ -139,6 +139,96 @@ dataType getExpressionType(ASTNode* expression) {
     return dataType::VOID;
 }
 
+// Get the actual data type of an expression, even if it's invalid for scalar operations
+dataType getActualExpressionType(ASTNode* expression) {
+    if (!expression) {
+        return dataType::VOID;
+    }
+
+    switch (expression->getType()) {
+        case ASTNodeType::LITERAL:
+        case ASTNodeType::SYMBOL:
+        {
+            if (expression->getSymbol()) {
+                Symbol* symbol = expression->getSymbol();
+                int tokenType = symbol->getType();
+                
+                if (tokenType == LIT_INT) {
+                    return dataType::INT;
+                } else if (tokenType == LIT_REAL) {
+                    return dataType::REAL;
+                } else if (tokenType == LIT_CHAR) {
+                    return dataType::CHAR;
+                } else if (tokenType == TK_IDENTIFIER) {
+                    // Return the actual data type, even for vectors and functions
+                    return symbol->getDataType();
+                }
+            }
+            break;
+        }
+
+        case ASTNodeType::ADD:
+        case ASTNodeType::SUBTRACT:
+        case ASTNodeType::MULTIPLY:
+        case ASTNodeType::DIVIDE:
+        case ASTNodeType::MODULO:
+        {
+            if (expression->getChildren().size() >= 2) {
+                dataType leftType = getActualExpressionType(expression->getChildren()[0]);
+                dataType rightType = getActualExpressionType(expression->getChildren()[1]);
+                
+                if (leftType == dataType::REAL || rightType == dataType::REAL) {
+                    return dataType::REAL;
+                } else if (leftType == dataType::INT || rightType == dataType::INT) {
+                    return dataType::INT;
+                } else if (leftType == dataType::CHAR || rightType == dataType::CHAR) {
+                    return dataType::CHAR;
+                } else {
+                    return dataType::BYTE;
+                }
+            }
+            break;
+        }
+
+        case ASTNodeType::LESS_THAN:
+        case ASTNodeType::GREATER_THAN:
+        case ASTNodeType::LESS_EQUAL:
+        case ASTNodeType::GREATER_EQUAL:
+        case ASTNodeType::EQUAL:
+        case ASTNodeType::DIFFERENT:
+        case ASTNodeType::AND:
+        case ASTNodeType::OR:
+        case ASTNodeType::NOT:
+        {
+            return dataType::BOOLEAN;
+        }
+
+        case ASTNodeType::FUNCTION_CALL:
+        {
+            if (!expression->getChildren().empty() && 
+                expression->getChildren()[0] && 
+                expression->getChildren()[0]->getSymbol()) {
+                return expression->getChildren()[0]->getSymbol()->getDataType();
+            }
+            break;
+        }
+        case ASTNodeType::VECTOR_ACCESS:
+        {
+            if (!expression->getChildren().empty() && 
+                expression->getChildren()[0] && 
+                expression->getChildren()[0]->getSymbol()) {
+                return expression->getChildren()[0]->getSymbol()->getDataType();
+            }
+            break;
+        }
+
+        default:
+            break;
+    }
+
+    return dataType::VOID;
+}
+
 // Check if the expected type is compatible with the actual type
 bool isTypeCompatible(dataType expected, dataType actual) {
     if (expected == actual) {
@@ -484,8 +574,23 @@ int checkReturnStatementsInFunction(ASTNode* functionBody, dataType expectedRetu
 
                 if (!child->getChildren().empty() && child->getChildren()[0]) {
                     ASTNode* returnExpression = child->getChildren()[0];
-                    actualReturnType = getExpressionType(returnExpression);
-                    // Don't override returnLine here, keep the RETURN statement line
+                    actualReturnType = getActualExpressionType(returnExpression); // Use new function to get actual type
+                    
+                    // Special check for vectors and functions being returned directly
+                    if (returnExpression->getType() == ASTNodeType::SYMBOL && returnExpression->getSymbol()) {
+                        Symbol* returnSymbol = returnExpression->getSymbol();
+                        if (returnSymbol->getIdentifierType() == identifierType::VECTOR) {
+                            fprintf(stderr, "Semantic error at line %d: Cannot return vector \"%s\" directly. Use vector indexing instead.\n",
+                                    returnLine, returnSymbol->getLexeme().c_str());
+                            errorCount++;
+                            return errorCount; // Don't check type compatibility for invalid return
+                        } else if (returnSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                            fprintf(stderr, "Semantic error at line %d: Cannot return function \"%s\" directly.\n",
+                                    returnLine, returnSymbol->getLexeme().c_str());
+                            errorCount++;
+                            return errorCount; // Don't check type compatibility for invalid return
+                        }
+                    }
                 } else {
                     // void return, actualReturnType remains VOID
                 }
@@ -1105,7 +1210,7 @@ int semanticVerification(ASTNode* root) {
 
     int totalErrors = 0;
     totalErrors += checkDeclarations(root); // Handles redeclarations, vector init, function params
-    // Undeclared identifiers are now checked more contextually within checkUsageAndTypesRecursive
+    // Undeclared identifiers are now checked more contextually within checkUsageAndTypes
     // totalErrors += checkUndeclaredIdentifiersRecursive(root); // This can be removed or refined
     totalErrors += checkUsageAndTypes(root); 
     totalErrors += checkFunctionReturnTypes(root);
