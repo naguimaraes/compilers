@@ -479,18 +479,15 @@ int checkReturnStatementsInFunction(ASTNode* functionBody, dataType expectedRetu
         switch (child->getType()) {
             case ASTNodeType::RETURN: {
                 dataType actualReturnType = dataType::VOID;
-                int returnLine = functionLine; // Default to function line, try to get more specific
+                int returnLine = child->getLineNumber(); // Use line number from RETURN AST node
+                if (returnLine == 0) returnLine = functionLine; // Fallback to function line
 
                 if (!child->getChildren().empty() && child->getChildren()[0]) {
                     ASTNode* returnExpression = child->getChildren()[0];
                     actualReturnType = getExpressionType(returnExpression);
-                    if (returnExpression->getSymbol()) returnLine = returnExpression->getSymbol()->getLineNumber();
-                    else if (!returnExpression->getChildren().empty() && returnExpression->getChildren()[0]->getSymbol()) {
-                        returnLine = returnExpression->getChildren()[0]->getSymbol()->getLineNumber();
-                    }
+                    // Don't override returnLine here, keep the RETURN statement line
                 } else {
                     // void return, actualReturnType remains VOID
-                    // Try to get line from RETURN keyword itself if possible (not directly available from ASTNode usually)
                 }
                 
                 if (!isTypeCompatible(expectedReturnType, actualReturnType)) {
@@ -587,9 +584,10 @@ int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount, int contextLine 
 
             dataType rhsType = getExpressionType(rhs);
             dataType lhsExpectedType = dataType::VOID;
-            int line = contextLine; // Start with context line
+            int line = node->getLineNumber(); // Use line number from ASSIGNMENT AST node
+            if (line == 0) line = contextLine; // Fallback to context
             if (line == 0) {
-                // Fallback to finding line from symbols
+                // Further fallback to finding line from symbols
                 if (lhs->getSymbol()) line = lhs->getSymbol()->getLineNumber();
                 else if (!lhs->getChildren().empty() && lhs->getChildren()[0]->getSymbol()) line = lhs->getChildren()[0]->getSymbol()->getLineNumber();
                 else if (rhs->getSymbol()) line = rhs->getSymbol()->getLineNumber();
@@ -670,7 +668,9 @@ int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount, int contextLine 
             if (!vecSymNode || !vecSymNode->getSymbol() || !indexNode) break;
 
             Symbol* vecSymbol = vecSymNode->getSymbol();
-            int line = vecSymbol->getLineNumber();
+            int line = node->getLineNumber(); // Use line number from VECTOR_ACCESS AST node
+            if (line == 0) line = contextLine; // Fallback to context
+            if (line == 0) line = vecSymbol->getLineNumber(); // Further fallback to declaration line
 
             if (vecSymbol->getIdentifierType() == identifierType::UNDEFINED) {
                  fprintf(stderr, "Semantic error at line %d: Vector \"%s\" not declared before use.\n",
@@ -697,7 +697,9 @@ int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount, int contextLine 
             if (!funcSymNode || !funcSymNode->getSymbol()) break;
 
             Symbol* funcSymbol = funcSymNode->getSymbol();
-            int line = funcSymbol->getLineNumber();
+            int line = node->getLineNumber(); // Use line number from AST node (call location)
+            if (line == 0) line = contextLine; // Fallback to context
+            if (line == 0) line = funcSymbol->getLineNumber(); // Further fallback to declaration line
 
             if (funcSymbol->getIdentifierType() == identifierType::UNDEFINED) {
                 fprintf(stderr, "Semantic error at line %d: Function \"%s\" not declared before call.\n",

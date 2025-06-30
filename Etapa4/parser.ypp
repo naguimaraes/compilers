@@ -167,16 +167,16 @@ command
     ;
 
 assignment
-    : TK_IDENTIFIER '=' expression                                           { $$ = new ASTNode(ASTNodeType::ASSIGNMENT); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
-    | TK_IDENTIFIER '[' expression ']' '=' expression                        { $$ = new ASTNode(ASTNodeType::ASSIGNMENT); ASTNode* vecAccess = new ASTNode(ASTNodeType::VECTOR_ACCESS); vecAccess->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); vecAccess->addChild($3); $$->addChild(vecAccess); if ($6 != nullptr) $$->addChild($6); }
+    : TK_IDENTIFIER '=' expression                                           { $$ = new ASTNode(ASTNodeType::ASSIGNMENT, nullptr, {}, getLineNumber()); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
+    | TK_IDENTIFIER '[' expression ']' '=' expression                        { $$ = new ASTNode(ASTNodeType::ASSIGNMENT, nullptr, {}, getLineNumber()); ASTNode* vecAccess = new ASTNode(ASTNodeType::VECTOR_ACCESS, nullptr, {}, getLineNumber()); vecAccess->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); vecAccess->addChild($3); $$->addChild(vecAccess); if ($6 != nullptr) $$->addChild($6); }
     ;
 
 read
-    : KW_READ TK_IDENTIFIER                                                  { $$ = new ASTNode(ASTNodeType::READ); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); }
+    : KW_READ TK_IDENTIFIER                                                  { $$ = new ASTNode(ASTNodeType::READ, nullptr, {}, getLineNumber()); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); }
     ;
 
 print
-    : KW_PRINT print_list                                                    { $$ = new ASTNode(ASTNodeType::PRINT); $$->addChild($2); }
+    : KW_PRINT print_list                                                    { $$ = new ASTNode(ASTNodeType::PRINT, nullptr, {}, getLineNumber()); $$->addChild($2); }
     ;
 
 print_list
@@ -187,7 +187,7 @@ print_list
     ;
 
 return
-    : KW_RETURN expression                                                   { $$ = new ASTNode(ASTNodeType::RETURN); if ($2 != nullptr) $$->addChild($2); }
+    : KW_RETURN expression                                                   { $$ = new ASTNode(ASTNodeType::RETURN, nullptr, {}, getLineNumber()); if ($2 != nullptr) $$->addChild($2); }
     ;
 
 expression
@@ -206,13 +206,13 @@ expression
     | expression OPERATOR_EQ expression                                      { $$ = new ASTNode(ASTNodeType::EQUAL, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
     | '~' expression                                                         { $$ = new ASTNode(ASTNodeType::NOT, nullptr, {}, getLineNumber()); $$->addChild($2); }
     | '(' expression ')'                                                     { $$ = $2; }
-    | TK_IDENTIFIER '[' expression ']'                                       { $$ = new ASTNode(ASTNodeType::VECTOR_ACCESS); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); $$->addChild($3); }
+    | TK_IDENTIFIER '[' expression ']'                                       { $$ = new ASTNode(ASTNodeType::VECTOR_ACCESS, nullptr, {}, getLineNumber()); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); $$->addChild($3); }
     | function_call                                                          { $$ = $1; }
     | factor                                                                 { $$ = $1; }
     ;
 
 function_call
-    : TK_IDENTIFIER '(' arguments_list ')'                                   { $$ = new ASTNode(ASTNodeType::FUNCTION_CALL); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
+    : TK_IDENTIFIER '(' arguments_list ')'                                   { $$ = new ASTNode(ASTNodeType::FUNCTION_CALL, nullptr, {}, getLineNumber()); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
     ;
 
 factor
@@ -233,10 +233,10 @@ expression_list
     ;
 
 flux_control
-    : KW_IF '(' expression ')' command %prec IFX                             { $$ = new ASTNode(ASTNodeType::IF); $$->addChild($3); if ($5 != nullptr) $$->addChild($5); }
-    | KW_IF '(' expression ')' command KW_ELSE command                       { $$ = new ASTNode(ASTNodeType::IF); $$->addChild($3); if ($5 != nullptr) $$->addChild($5); ASTNode* elseNode = new ASTNode(ASTNodeType::ELSE); if ($7 != nullptr) elseNode->addChild($7); $$->addChild(elseNode); }
-    | KW_WHILE expression KW_DO command                                      { $$ = new ASTNode(ASTNodeType::WHILE_DO); $$->addChild($2); if ($4 != nullptr) $$->addChild($4); }
-    | KW_DO command KW_WHILE expression ';'                                  { $$ = new ASTNode(ASTNodeType::DO_WHILE); if ($2 != nullptr) $$->addChild($2); $$->addChild($4); }
+    : KW_IF '(' expression ')' command %prec IFX                             { $$ = new ASTNode(ASTNodeType::IF, nullptr, {}, getLineNumber()); $$->addChild($3); if ($5 != nullptr) $$->addChild($5); }
+    | KW_IF '(' expression ')' command KW_ELSE command                       { $$ = new ASTNode(ASTNodeType::IF, nullptr, {}, getLineNumber()); $$->addChild($3); if ($5 != nullptr) $$->addChild($5); ASTNode* elseNode = new ASTNode(ASTNodeType::ELSE, nullptr, {}, getLineNumber()); if ($7 != nullptr) elseNode->addChild($7); $$->addChild(elseNode); }
+    | KW_WHILE expression KW_DO command                                      { $$ = new ASTNode(ASTNodeType::WHILE_DO, nullptr, {}, getLineNumber()); $$->addChild($2); if ($4 != nullptr) $$->addChild($4); }
+    | KW_DO command KW_WHILE expression ';'                                  { $$ = new ASTNode(ASTNodeType::DO_WHILE, nullptr, {}, getLineNumber()); if ($2 != nullptr) $$->addChild($2); $$->addChild($4); }
     ;
 
 %%

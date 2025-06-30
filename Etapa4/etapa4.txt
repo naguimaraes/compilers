@@ -8,16 +8,15 @@ int number = 'A';
 int x = 1;
 int y = 1;
 
-// declaracao de um vetor de 10 posicoes, inicializado
 
-//int v[60] = 10, 20, 30, 40, 50, 60;
+//int v[60] = 10, 20, 30, 40, 50, 60, 4;
 
 int v[01] = 'a',04,'b',500,10,0,0,0,0,7;
 
 // declaracao de uma matriz de 100 posicoes, nao inicializada
 
 int matrix[001];
-real r[10] = 1/2; 
+real r[10000000000000] = 1/2; 
 
 real num = 5/7;	// note que 5/7 nao eh uma expressao, eh um literal real
 
@@ -35,7 +34,8 @@ int main ()
   c = 5;
   v[5] = 7;
   v[7] = 55;
-  c = v[5] + 7;
+  c = v + 7;
+  c = incn - 2;
   print v[5] 7 c;
   number = 2;
 
@@ -50,16 +50,16 @@ int main ()
 
   x = 1;
   do {
-    x = incn(x,1);
+    x = incn(x,1,2);
     y = incn(y,y);
     } while (x<01);
 
 
   print "Dobrando algumas vezes y fica " y "\n";
 
-  if (a==51) 
+  if (a==8/7) 
     {
-    a = a + 1;
+    a = a + 1 + 5/7 + incn(1,2);
     print "A era=15\n";
     };
     
@@ -74,7 +74,7 @@ int main ()
 
   int incn (int p, int n)
   {
-  return  p+n;
+  return  b;
   }
 
 // end of file

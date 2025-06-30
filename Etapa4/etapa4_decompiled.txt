@@ -6,7 +6,7 @@ int x = 1;
 int y = 1;
 int v[01] = 'a', 04, 'b', 500, 10, 0, 0, 0, 0, 7;
 int matrix[001];
-real r[10] = 1/2;
+real r[10000000000000] = 1/2;
 real num = 5/7;
 int main() {
 	number = 0;
@@ -14,7 +14,8 @@ int main() {
 	c = 5;
 	v[5] = 7;
 	v[7] = 55;
-	c = (v[5] + 7);
+	c = (v + 7);
+	c = (incn - 2);
 	print v[5];
 	number = 2;
 	print "Digite um numero: \n";
@@ -25,13 +26,13 @@ int main() {
 	}
 	x = 1;
 	do	{
-		x = incn(x, 1);
+		x = incn(x, 1, 2);
 		y = incn(y, y);
 	}
 	while(x < 01);
 	print "Dobrando algumas vezes y fica ";
-	if ((a == 51))	{
-		a = (a + 1);
+	if ((a == 8/7))	{
+		a = (((a + 1) + 5/7) + incn(1, 2));
 		print "A era=15\n";
 	}
 	if ((x == 100))	{
@@ -48,5 +49,5 @@ int main() {
 }
 
 int incn(int p, int n) {
-	return (p + n);
+	return b;
 }
