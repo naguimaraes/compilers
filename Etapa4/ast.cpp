@@ -133,6 +133,21 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
             break;
         }
         
+        case ASTNodeType::VECTOR_ACCESS: {
+            if (!node->getChildren().empty() && node->getChildren()[0] && node->getChildren()[0]->getSymbol()) {
+                outFile << node->getChildren()[0]->getSymbol()->getLexeme();
+            }
+            
+            outFile << "[";
+            
+            if (node->getChildren().size() > 1) {
+                decompileAST(outFile, node->getChildren()[1], 0);
+            }
+            
+            outFile << "]";
+            break;
+        }
+        
         case ASTNodeType::FUNCTION_DECLARATION: {
             if (!node->getChildren().empty()) {
                 decompileAST(outFile, node->getChildren()[0], 0);
@@ -222,13 +237,14 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
         }
         
         case ASTNodeType::ASSIGNMENT: {
-            if (!node->getChildren().empty() && node->getChildren()[0] && node->getChildren()[0]->getSymbol()) {
-                outFile << currentIndent << node->getChildren()[0]->getSymbol()->getLexeme();
+            if (!node->getChildren().empty()) {
+                outFile << currentIndent;
                 
-                if (!node->getChildren()[0]->getChildren().empty()) {
-                    outFile << "[";
-                    decompileAST(outFile, node->getChildren()[0]->getChildren()[0], 0);
-                    outFile << "]";
+                // Check if it's a vector assignment
+                if (node->getChildren()[0] && node->getChildren()[0]->getType() == ASTNodeType::VECTOR_ACCESS) {
+                    decompileAST(outFile, node->getChildren()[0], 0);
+                } else if (node->getChildren()[0] && node->getChildren()[0]->getSymbol()) {
+                    outFile << node->getChildren()[0]->getSymbol()->getLexeme();
                 }
                 
                 outFile << " = ";

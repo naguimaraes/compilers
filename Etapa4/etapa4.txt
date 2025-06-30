@@ -33,7 +33,9 @@ int main ()
   number = 0;
   c = 7 - 1;
   c = 5;
+  v[5] = 7;
   v[7] = 55;
+  c = v[5] + 7;
   print v[5] 7 c;
   number = 2;
 
