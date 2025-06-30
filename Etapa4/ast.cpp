@@ -26,8 +26,8 @@ std::vector<std::string> ASTTypeNames = {
     "READ", "PRINT", "RETURN",
 };
 
-ASTNode::ASTNode(ASTNodeType type, Symbol* symbol, std::vector<ASTNode*> children)
-    : type(type), children(children), symbol(symbol) {} 
+ASTNode::ASTNode(ASTNodeType type, Symbol* symbol, std::vector<ASTNode*> children, int lineNumber)
+    : type(type), children(children), symbol(symbol), lineNumber(lineNumber) {} 
 
 void ASTNode::addChild(ASTNode* child) {
     children.push_back(child);
@@ -43,6 +43,14 @@ Symbol* ASTNode::getSymbol() {
 
 ASTNodeType ASTNode::getType() {
     return this->type;
+}
+
+int ASTNode::getLineNumber() const {
+    return this->lineNumber;
+}
+
+void ASTNode::setLineNumber(int line) {
+    this->lineNumber = line;
 }
 
 std::string getIndent(int indent) {

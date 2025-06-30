@@ -37,13 +37,16 @@ private:
     ASTNodeType type;
     std::vector<ASTNode*> children;
     Symbol* symbol;
+    int lineNumber; // Add line number to AST nodes
 
 public:
-    ASTNode(ASTNodeType type = ASTNodeType::UNKNOWN, Symbol* symbol = nullptr, std::vector<ASTNode*> children = {});
+    ASTNode(ASTNodeType type = ASTNodeType::UNKNOWN, Symbol* symbol = nullptr, std::vector<ASTNode*> children = {}, int lineNumber = 0);
     void addChild(ASTNode* child);
     std::vector<ASTNode*> getChildren();
     Symbol* getSymbol();
     ASTNodeType getType();
+    int getLineNumber() const; // Getter for line number
+    void setLineNumber(int line); // Setter for line number
 };
 
 void printAST(int level, ASTNode* node);

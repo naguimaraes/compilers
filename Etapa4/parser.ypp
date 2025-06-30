@@ -191,20 +191,20 @@ return
     ;
 
 expression
-    : expression '+' expression                                              { $$ = new ASTNode(ASTNodeType::ADD); $$->addChild($1); $$->addChild($3); }
-    | expression '-' expression                                              { $$ = new ASTNode(ASTNodeType::SUBTRACT); $$->addChild($1); $$->addChild($3); }
-    | expression '*' expression                                              { $$ = new ASTNode(ASTNodeType::MULTIPLY); $$->addChild($1); $$->addChild($3); }
-    | expression '/' expression                                              { $$ = new ASTNode(ASTNodeType::DIVIDE); $$->addChild($1); $$->addChild($3); }
-    | expression '%' expression                                              { $$ = new ASTNode(ASTNodeType::MODULO); $$->addChild($1); $$->addChild($3); }
-    | expression '<' expression                                              { $$ = new ASTNode(ASTNodeType::LESS_THAN); $$->addChild($1); $$->addChild($3); }
-    | expression '>' expression                                              { $$ = new ASTNode(ASTNodeType::GREATER_THAN); $$->addChild($1); $$->addChild($3); }
-    | expression '&' expression                                              { $$ = new ASTNode(ASTNodeType::AND); $$->addChild($1); $$->addChild($3); }
-    | expression '|' expression                                              { $$ = new ASTNode(ASTNodeType::OR); $$->addChild($1); $$->addChild($3); }
-    | expression OPERATOR_DIF expression                                     { $$ = new ASTNode(ASTNodeType::DIFFERENT); $$->addChild($1); $$->addChild($3); }
-    | expression OPERATOR_LE expression                                      { $$ = new ASTNode(ASTNodeType::LESS_EQUAL); $$->addChild($1); $$->addChild($3); }
-    | expression OPERATOR_GE expression                                      { $$ = new ASTNode(ASTNodeType::GREATER_EQUAL); $$->addChild($1); $$->addChild($3); }
-    | expression OPERATOR_EQ expression                                      { $$ = new ASTNode(ASTNodeType::EQUAL); $$->addChild($1); $$->addChild($3); }
-    | '~' expression                                                         { $$ = new ASTNode(ASTNodeType::NOT); $$->addChild($2); }
+    : expression '+' expression                                              { $$ = new ASTNode(ASTNodeType::ADD, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression '-' expression                                              { $$ = new ASTNode(ASTNodeType::SUBTRACT, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression '*' expression                                              { $$ = new ASTNode(ASTNodeType::MULTIPLY, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression '/' expression                                              { $$ = new ASTNode(ASTNodeType::DIVIDE, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression '%' expression                                              { $$ = new ASTNode(ASTNodeType::MODULO, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression '<' expression                                              { $$ = new ASTNode(ASTNodeType::LESS_THAN, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression '>' expression                                              { $$ = new ASTNode(ASTNodeType::GREATER_THAN, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression '&' expression                                              { $$ = new ASTNode(ASTNodeType::AND, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression '|' expression                                              { $$ = new ASTNode(ASTNodeType::OR, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression OPERATOR_DIF expression                                     { $$ = new ASTNode(ASTNodeType::DIFFERENT, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression OPERATOR_LE expression                                      { $$ = new ASTNode(ASTNodeType::LESS_EQUAL, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression OPERATOR_GE expression                                      { $$ = new ASTNode(ASTNodeType::GREATER_EQUAL, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | expression OPERATOR_EQ expression                                      { $$ = new ASTNode(ASTNodeType::EQUAL, nullptr, {}, getLineNumber()); $$->addChild($1); $$->addChild($3); }
+    | '~' expression                                                         { $$ = new ASTNode(ASTNodeType::NOT, nullptr, {}, getLineNumber()); $$->addChild($2); }
     | '(' expression ')'                                                     { $$ = $2; }
     | TK_IDENTIFIER '[' expression ']'                                       { $$ = new ASTNode(ASTNodeType::VECTOR_ACCESS); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); $$->addChild($3); }
     | function_call                                                          { $$ = $1; }

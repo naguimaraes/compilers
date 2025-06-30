@@ -13,7 +13,7 @@ enum class dataType {
 };
 
 enum class identifierType {
-    VARIABLE, VECTOR, FUNCTION, LITERAL, UNDEFINED
+    VARIABLE, VECTOR, FUNCTION, LITERAL, SCALAR, UNDEFINED
 };
 
 

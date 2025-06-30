@@ -65,6 +65,11 @@ dataType getExpressionType(ASTNode* expression) {
                 } else if (tokenType == LIT_CHAR) {
                     return dataType::CHAR;
                 } else if (tokenType == TK_IDENTIFIER) {
+                    // Check if the identifier is appropriate for scalar use
+                    if (symbol->getIdentifierType() == identifierType::VECTOR ||
+                        symbol->getIdentifierType() == identifierType::FUNCTION) {
+                        return dataType::VOID; // Invalid for scalar operations
+                    }
                     return symbol->getDataType();
                 }
             }
@@ -549,7 +554,7 @@ int checkFunctionReturnTypes(ASTNode* root) {
 }
 
 // New function to check usage of identifiers and types in expressions/assignments
-int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount) { // errorCount passed by reference
+int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount, int contextLine = 0) { // errorCount passed by reference, contextLine for line propagation
     if (!node) {
         return 0; 
     }
@@ -568,7 +573,7 @@ int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount) { // errorCount 
     if (node->getType() == ASTNodeType::FUNCTION_DECLARATION) {
         // Check the function body (4th child if it exists)
         if (node->getChildren().size() > 3 && node->getChildren()[3]) {
-            checkUsageAndTypesRecursive(node->getChildren()[3], errorCount);
+            checkUsageAndTypesRecursive(node->getChildren()[3], errorCount, contextLine);
         }
         return 0; // Don't process other children of function declaration
     }
@@ -582,11 +587,14 @@ int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount) { // errorCount 
 
             dataType rhsType = getExpressionType(rhs);
             dataType lhsExpectedType = dataType::VOID;
-            int line = 0;
-            if (lhs->getSymbol()) line = lhs->getSymbol()->getLineNumber();
-            else if (!lhs->getChildren().empty() && lhs->getChildren()[0]->getSymbol()) line = lhs->getChildren()[0]->getSymbol()->getLineNumber();
-            else if (rhs->getSymbol()) line = rhs->getSymbol()->getLineNumber();
-            else if (!rhs->getChildren().empty() && rhs->getChildren()[0]->getSymbol()) line = rhs->getChildren()[0]->getSymbol()->getLineNumber();
+            int line = contextLine; // Start with context line
+            if (line == 0) {
+                // Fallback to finding line from symbols
+                if (lhs->getSymbol()) line = lhs->getSymbol()->getLineNumber();
+                else if (!lhs->getChildren().empty() && lhs->getChildren()[0]->getSymbol()) line = lhs->getChildren()[0]->getSymbol()->getLineNumber();
+                else if (rhs->getSymbol()) line = rhs->getSymbol()->getLineNumber();
+                else if (!rhs->getChildren().empty() && rhs->getChildren()[0]->getSymbol()) line = rhs->getChildren()[0]->getSymbol()->getLineNumber();
+            }
 
 
             if (lhs->getType() == ASTNodeType::SYMBOL) {
@@ -798,15 +806,228 @@ int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount) { // errorCount 
 
             dataType leftType = getExpressionType(left);
             dataType rightType = getExpressionType(right);
-            int line = 0;
-            if (left->getSymbol()) line = left->getSymbol()->getLineNumber();
-            else if (!left->getChildren().empty() && left->getChildren()[0]->getSymbol()) line = left->getChildren()[0]->getSymbol()->getLineNumber();
-            else if (right->getSymbol()) line = right->getSymbol()->getLineNumber();
-             else if (!right->getChildren().empty() && right->getChildren()[0]->getSymbol()) line = right->getChildren()[0]->getSymbol()->getLineNumber();
+            int line = node->getLineNumber(); // Use line number from AST node
+            if (line == 0) line = contextLine; // Fallback to context
+            if (line == 0) {
+                // Further fallback to finding line from symbols
+                if (left->getSymbol()) line = left->getSymbol()->getLineNumber();
+                else if (!left->getChildren().empty() && left->getChildren()[0]->getSymbol()) line = left->getChildren()[0]->getSymbol()->getLineNumber();
+                else if (right->getSymbol()) line = right->getSymbol()->getLineNumber();
+                else if (!right->getChildren().empty() && right->getChildren()[0]->getSymbol()) line = right->getChildren()[0]->getSymbol()->getLineNumber();
+            }
 
+            // Check for invalid operand types for modulo
             if (leftType == dataType::REAL || rightType == dataType::REAL || leftType == dataType::VOID || rightType == dataType::VOID) {
                 fprintf(stderr, "Semantic error at line %d: Operands of modulo operator %% cannot be of type REAL or VOID.\n", line);
                 currentErrors++;
+            }
+            
+            // Check if operands are vectors or functions used as scalars
+            if (left->getType() == ASTNodeType::SYMBOL && left->getSymbol()) {
+                Symbol* leftSymbol = left->getSymbol();
+                if (leftSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in modulo operation. Use vector indexing instead.\n", 
+                            line, leftSymbol->getLexeme().c_str());
+                    currentErrors++;
+                } else if (leftSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in modulo operation.\n", 
+                            line, leftSymbol->getLexeme().c_str());
+                    currentErrors++;
+                }
+            }
+            if (right->getType() == ASTNodeType::SYMBOL && right->getSymbol()) {
+                Symbol* rightSymbol = right->getSymbol();
+                if (rightSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in modulo operation. Use vector indexing instead.\n", 
+                            line, rightSymbol->getLexeme().c_str());
+                    currentErrors++;
+                } else if (rightSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in modulo operation.\n", 
+                            line, rightSymbol->getLexeme().c_str());
+                    currentErrors++;
+                }
+            }
+            break;
+        }
+        case ASTNodeType::ADD:
+        case ASTNodeType::SUBTRACT:
+        case ASTNodeType::MULTIPLY:
+        case ASTNodeType::DIVIDE: {
+            if (node->getChildren().size() < 2) break;
+            ASTNode* left = node->getChildren()[0];
+            ASTNode* right = node->getChildren()[1];
+            if (!left || !right) break;
+
+            int line = node->getLineNumber(); // Use line number from AST node
+            if (line == 0) line = contextLine; // Fallback to context
+            if (line == 0) {
+                // Further fallback to finding line from symbols
+                if (left->getSymbol()) line = left->getSymbol()->getLineNumber();
+                else if (!left->getChildren().empty() && left->getChildren()[0]->getSymbol()) line = left->getChildren()[0]->getSymbol()->getLineNumber();
+                else if (right->getSymbol()) line = right->getSymbol()->getLineNumber();
+                else if (!right->getChildren().empty() && right->getChildren()[0]->getSymbol()) line = right->getChildren()[0]->getSymbol()->getLineNumber();
+            }
+
+            // Check if operands are vectors or functions used as scalars
+            if (left->getType() == ASTNodeType::SYMBOL && left->getSymbol()) {
+                Symbol* leftSymbol = left->getSymbol();
+                if (leftSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    const char* opName = (node->getType() == ASTNodeType::ADD) ? "addition" :
+                                        (node->getType() == ASTNodeType::SUBTRACT) ? "subtraction" :
+                                        (node->getType() == ASTNodeType::MULTIPLY) ? "multiplication" : "division";
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in %s. Use vector indexing instead.\n", 
+                            line, leftSymbol->getLexeme().c_str(), opName);
+                    currentErrors++;
+                } else if (leftSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    const char* opName = (node->getType() == ASTNodeType::ADD) ? "addition" :
+                                        (node->getType() == ASTNodeType::SUBTRACT) ? "subtraction" :
+                                        (node->getType() == ASTNodeType::MULTIPLY) ? "multiplication" : "division";
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in %s.\n", 
+                            line, leftSymbol->getLexeme().c_str(), opName);
+                    currentErrors++;
+                }
+            }
+            if (right->getType() == ASTNodeType::SYMBOL && right->getSymbol()) {
+                Symbol* rightSymbol = right->getSymbol();
+                if (rightSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    const char* opName = (node->getType() == ASTNodeType::ADD) ? "addition" :
+                                        (node->getType() == ASTNodeType::SUBTRACT) ? "subtraction" :
+                                        (node->getType() == ASTNodeType::MULTIPLY) ? "multiplication" : "division";
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in %s. Use vector indexing instead.\n", 
+                            line, rightSymbol->getLexeme().c_str(), opName);
+                    currentErrors++;
+                } else if (rightSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    const char* opName = (node->getType() == ASTNodeType::ADD) ? "addition" :
+                                        (node->getType() == ASTNodeType::SUBTRACT) ? "subtraction" :
+                                        (node->getType() == ASTNodeType::MULTIPLY) ? "multiplication" : "division";
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in %s.\n", 
+                            line, rightSymbol->getLexeme().c_str(), opName);
+                    currentErrors++;
+                }
+            }
+            break;
+        }
+        case ASTNodeType::LESS_THAN:
+        case ASTNodeType::GREATER_THAN:
+        case ASTNodeType::LESS_EQUAL:
+        case ASTNodeType::GREATER_EQUAL:
+        case ASTNodeType::EQUAL:
+        case ASTNodeType::DIFFERENT: {
+            if (node->getChildren().size() < 2) break;
+            ASTNode* left = node->getChildren()[0];
+            ASTNode* right = node->getChildren()[1];
+            if (!left || !right) break;
+
+            int line = node->getLineNumber(); // Use line number from AST node
+            if (line == 0) line = contextLine; // Fallback to context
+            if (line == 0) {
+                // Further fallback to finding line from symbols
+                if (left->getSymbol()) line = left->getSymbol()->getLineNumber();
+                else if (!left->getChildren().empty() && left->getChildren()[0]->getSymbol()) line = left->getChildren()[0]->getSymbol()->getLineNumber();
+                else if (right->getSymbol()) line = right->getSymbol()->getLineNumber();
+                else if (!right->getChildren().empty() && right->getChildren()[0]->getSymbol()) line = right->getChildren()[0]->getSymbol()->getLineNumber();
+            }
+
+            // Check if operands are vectors or functions used as scalars
+            if (left->getType() == ASTNodeType::SYMBOL && left->getSymbol()) {
+                Symbol* leftSymbol = left->getSymbol();
+                if (leftSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in comparison operation. Use vector indexing instead.\n", 
+                            line, leftSymbol->getLexeme().c_str());
+                    currentErrors++;
+                } else if (leftSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in comparison operation.\n", 
+                            line, leftSymbol->getLexeme().c_str());
+                    currentErrors++;
+                }
+            }
+            if (right->getType() == ASTNodeType::SYMBOL && right->getSymbol()) {
+                Symbol* rightSymbol = right->getSymbol();
+                if (rightSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in comparison operation. Use vector indexing instead.\n", 
+                            line, rightSymbol->getLexeme().c_str());
+                    currentErrors++;
+                } else if (rightSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in comparison operation.\n", 
+                            line, rightSymbol->getLexeme().c_str());
+                    currentErrors++;
+                }
+            }
+            break;
+        }
+        case ASTNodeType::AND:
+        case ASTNodeType::OR: {
+            if (node->getChildren().size() < 2) break;
+            ASTNode* left = node->getChildren()[0];
+            ASTNode* right = node->getChildren()[1];
+            if (!left || !right) break;
+
+            int line = node->getLineNumber(); // Use line number from AST node
+            if (line == 0) line = contextLine; // Fallback to context
+            if (line == 0) {
+                // Further fallback to finding line from symbols
+                if (left->getSymbol()) line = left->getSymbol()->getLineNumber();
+                else if (!left->getChildren().empty() && left->getChildren()[0]->getSymbol()) line = left->getChildren()[0]->getSymbol()->getLineNumber();
+                else if (right->getSymbol()) line = right->getSymbol()->getLineNumber();
+                else if (!right->getChildren().empty() && right->getChildren()[0]->getSymbol()) line = right->getChildren()[0]->getSymbol()->getLineNumber();
+            }
+
+            // Check if operands are vectors or functions used as scalars
+            if (left->getType() == ASTNodeType::SYMBOL && left->getSymbol()) {
+                Symbol* leftSymbol = left->getSymbol();
+                if (leftSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    const char* opName = (node->getType() == ASTNodeType::AND) ? "logical AND" : "logical OR";
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in %s operation. Use vector indexing instead.\n", 
+                            line, leftSymbol->getLexeme().c_str(), opName);
+                    currentErrors++;
+                } else if (leftSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    const char* opName = (node->getType() == ASTNodeType::AND) ? "logical AND" : "logical OR";
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in %s operation.\n", 
+                            line, leftSymbol->getLexeme().c_str(), opName);
+                    currentErrors++;
+                }
+            }
+            if (right->getType() == ASTNodeType::SYMBOL && right->getSymbol()) {
+                Symbol* rightSymbol = right->getSymbol();
+                if (rightSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    const char* opName = (node->getType() == ASTNodeType::AND) ? "logical AND" : "logical OR";
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in %s operation. Use vector indexing instead.\n", 
+                            line, rightSymbol->getLexeme().c_str(), opName);
+                    currentErrors++;
+                } else if (rightSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    const char* opName = (node->getType() == ASTNodeType::AND) ? "logical AND" : "logical OR";
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in %s operation.\n", 
+                            line, rightSymbol->getLexeme().c_str(), opName);
+                    currentErrors++;
+                }
+            }
+            break;
+        }
+        case ASTNodeType::NOT: {
+            if (node->getChildren().size() < 1) break;
+            ASTNode* operand = node->getChildren()[0];
+            if (!operand) break;
+
+            int line = node->getLineNumber(); // Use line number from AST node
+            if (line == 0) line = contextLine; // Fallback to context
+            if (line == 0) {
+                // Further fallback to finding line from symbols
+                if (operand->getSymbol()) line = operand->getSymbol()->getLineNumber();
+                else if (!operand->getChildren().empty() && operand->getChildren()[0]->getSymbol()) line = operand->getChildren()[0]->getSymbol()->getLineNumber();
+            }
+
+            // Check if operand is vector or function used as scalar
+            if (operand->getType() == ASTNodeType::SYMBOL && operand->getSymbol()) {
+                Symbol* operandSymbol = operand->getSymbol();
+                if (operandSymbol->getIdentifierType() == identifierType::VECTOR) {
+                    fprintf(stderr, "Semantic error at line %d: Vector \"%s\" cannot be used as scalar in logical NOT operation. Use vector indexing instead.\n", 
+                            line, operandSymbol->getLexeme().c_str());
+                    currentErrors++;
+                } else if (operandSymbol->getIdentifierType() == identifierType::FUNCTION) {
+                    fprintf(stderr, "Semantic error at line %d: Function \"%s\" cannot be used as scalar in logical NOT operation.\n", 
+                            line, operandSymbol->getLexeme().c_str());
+                    currentErrors++;
+                }
             }
             break;
         }
@@ -822,7 +1043,23 @@ int checkUsageAndTypesRecursive(ASTNode* node, int& errorCount) { // errorCount 
 
     for (ASTNode* child : node->getChildren()) {
         if (child) { 
-             checkUsageAndTypesRecursive(child, errorCount); // Pass errorCount by reference
+            // Try to find line number for context propagation
+            int newContextLine = contextLine;
+            if (newContextLine == 0) {
+                // Look for line information in the current node or its direct children
+                if (node->getSymbol()) {
+                    newContextLine = node->getSymbol()->getLineNumber();
+                } else {
+                    // Look in children for symbols with line numbers
+                    for (ASTNode* grandchild : node->getChildren()) {
+                        if (grandchild && grandchild->getSymbol()) {
+                            newContextLine = grandchild->getSymbol()->getLineNumber();
+                            break;
+                        }
+                    }
+                }
+            }
+            checkUsageAndTypesRecursive(child, errorCount, newContextLine); // Pass errorCount and context line
         }
     }
     errorCount += currentErrors; // Add errors from this node to the total
