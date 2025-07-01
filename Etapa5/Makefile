@@ -40,7 +40,7 @@ test: $(PROJECT)
 	@./$(PROJECT) $(PROJECT)_recompiled.txt  $(PROJECT)_recompiled_recompiled.txt 
 	@diff $(PROJECT)_recompiled.txt $(PROJECT)_recompiled_recompiled.txt > /dev/null && echo "\n2 times recompiled code is equal to 1 time recompiled code." || echo "\nRecompiling failed."
 
-OBJS = lex.yy.o parser.tab.o ast.o symbol.o verifications.o main.o
+OBJS = lex.yy.o parser.tab.o ast.o symbol.o verifications.o tac.o main.o
 $(PROJECT): $(OBJS)
 	$(CXX) $(OBJS) -o $(PROJECT)
 
@@ -64,4 +64,4 @@ clean:
 .PHONY: tgz
 tgz: clean
 	@touch $(PROJECT).tgz
-	@tar cvzf $(PROJECT).tgz --add-file=Makefile --add-file=ast.cpp --add-file=ast.hpp --add-file=main.cpp --add-file=parser.ypp --add-file=scanner.l --add-file=symbol.cpp --add-file=symbol.hpp --add-file=$(PROJECT).txt --add-file=verifications.cpp --add-file=verifications.hpp
+	@tar cvzf $(PROJECT).tgz --add-file=Makefile --add-file=ast.cpp --add-file=ast.hpp --add-file=main.cpp --add-file=parser.ypp --add-file=scanner.l --add-file=symbol.cpp --add-file=symbol.hpp --add-file=$(PROJECT).txt --add-file=verifications.cpp --add-file=verifications.hpp --add-file=tac.cpp --add-file=tac.hpp
