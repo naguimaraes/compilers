@@ -12,6 +12,7 @@ enum class TACType {
     SYMBOL,     // Symbol reference (utility)
                 // Using res = a, op1 = b, op2 = c
     MOVE,       // Assignment: a = b
+    INIT,       // Variable initialization: a = b (first assignment)
     ADD,        // Addition: a = b + c
     SUB,        // Subtraction: a = b - c
     MUL,        // Multiplication: a = b * c

@@ -37,10 +37,10 @@ int main(int argc, char **argv){
 
     fprintf(stderr,"The file had %d lines in total.\n", getLineNumber());
 
-    //printSymbolTable();
+    printSymbolTable();
     
-    //fprintf(stderr, "\n======== AST Structure ========\n");
-    //printAST(0, root);
+    fprintf(stderr, "\n======== AST Structure ========\n");
+    printAST(0, root);
 
     std::ofstream outFile(argv[2]);
     if (!outFile.is_open()) {

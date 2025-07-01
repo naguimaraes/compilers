@@ -16,7 +16,7 @@ int v[01] = 'a',04,'b',500,10,0,0,0,0,7;
 // declaracao de uma matriz de 100 posicoes, nao inicializada
 
 int matrix[01];
-real r[10000000000000] = 1/2; 
+real r[20000000000000] = 1/2, 4/7; 
 
 real num = 5/7;	// note que 5/7 nao eh uma expressao, eh um literal real
 
@@ -34,7 +34,7 @@ int main ()
   c = 5;
   v[5] = 7;
   v[7] = 55;
-  print v[5] 7 c;
+  print v[5] 7 c v[2];
   number = 2;
 
   print "Digite um numero: \n";
@@ -48,8 +48,7 @@ int main ()
 
   x = 1;
   do {
-    x = incn(x,1);
-    y = incn(y,y);
+    x = incn(x,1,2,3);
     } while (x<01);
 
 
@@ -57,7 +56,7 @@ int main ()
 
   if (a==8/7) 
     {
-    a = a + 1 + incn(1,2);
+    a = a + 1 + incn(1,2,3,4);
     print "A era=15\n";
     };
     
@@ -70,9 +69,9 @@ int main ()
   {{}} {}
   }
 
-  int incn (int p, int n)
+  int incn (int p, int n, int m, int o)
   {
-  return p + n;
+  return p + n + m + o;
   }
 
 // end of file

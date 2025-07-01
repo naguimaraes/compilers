@@ -73,7 +73,12 @@ string invertNumberInt(string number){
         invertedNum[i] = number[number.size() - i - 1];
     }
 
-    return invertedNum;
+    // Remove leading zeros
+    size_t firstNonZero = invertedNum.find_first_not_of('0');
+    if (firstNonZero == string::npos) {
+        return "0"; // All zeros case
+    }
+    return invertedNum.substr(firstNonZero);
 }
 
 string invertNumberReal(string number){

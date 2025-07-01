@@ -1,12 +1,12 @@
 byte a = 51;
 byte b = 'x';
-byte c = 001;
+byte c = 1;
 int number = 'A';
 int x = 1;
 int y = 1;
-int v[01] = 'a', 04, 'b', 500, 10, 0, 0, 0, 0, 7;
-int matrix[01];
-real r[10000000000000] = 1/2;
+int v[1] = 'a', 4, 'b', 5, 1, 0, 0, 0, 0, 7;
+int matrix[1];
+real r[2] = 1/2, 4/7;
 real num = 5/7;
 int main() {
 	number = 0;
@@ -18,22 +18,21 @@ int main() {
 	number = 2;
 	print "Digite um numero: \n";
 	read number;
-	while(x < 02) do	{
+	while(x < 2) do	{
 		x = (x + 1);
 		print ".";
 	}
 	x = 1;
 	do	{
-		x = incn(x, 1);
-		y = incn(y, y);
+		x = incn(x, 1, 2, 3);
 	}
-	while(x < 01);
+	while(x < 1);
 	print "Dobrando algumas vezes y fica ";
 	if ((a == 8/7))	{
-		a = ((a + 1) + incn(1, 2));
+		a = ((a + 1) + incn(1, 2, 3, 4));
 		print "A era=15\n";
 	}
-	if ((x == 100))	{
+	if ((x == 1))	{
 		print "Nao tem como isso...\n";
 	}
 	else
@@ -46,6 +45,6 @@ int main() {
 	}
 }
 
-int incn(int p, int n) {
-	return (p + n);
+int incn(int p, int n, int m, int o) {
+	return (((p + n) + m) + o);
 }

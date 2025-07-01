@@ -179,16 +179,11 @@ void printTAC(TAC* tac) {
     std::cout << "|" << std::endl;
     std::cout << "+-------------+-------------+-------------+-------------+" << std::endl;
     
-    // Find the beginning of the list (last instruction in inverted list)
+    // Print from current position backwards (reverse order)
     TAC* current = tac;
-    while (current->getPrev()) {
-        current = current->getPrev();
-    }
-    
-    // Print from beginning to end
     while (current) {
         current->print();
-        current = current->getNext();
+        current = current->getPrev();
     }
     
     // Print table footer
@@ -483,6 +478,28 @@ TAC* generateWhile(ASTNode* node) {
     return result;
 }
 
+// Helper function to process expression list recursively (collects all arguments in order)
+void collectExpressionListArgs(ASTNode* node, std::vector<ASTNode*>& args) {
+    if (node == nullptr) return;
+    
+    if (node->getType() == ASTNodeType::EXPRESSION_LIST) {
+        // For EXPRESSION_LIST, the first child is an expression, 
+        // and the remaining children (if any) are more EXPRESSION_LISTs
+        if (!node->getChildren().empty()) {
+            // Add the first child (the actual expression)
+            args.push_back(node->getChildren()[0]);
+            
+            // Recursively process remaining children
+            for (size_t i = 1; i < node->getChildren().size(); i++) {
+                collectExpressionListArgs(node->getChildren()[i], args);
+            }
+        }
+    } else {
+        // If it's not an EXPRESSION_LIST, it's a direct expression
+        args.push_back(node);
+    }
+}
+
 TAC* generateFunctionCall(ASTNode* node) {
     if (node->getChildren().empty()) return nullptr;
     
@@ -505,30 +522,22 @@ TAC* generateFunctionCall(ASTNode* node) {
             
             // If this child is an arguments list, process its children
             if (child->getType() == ASTNodeType::ARGUMENTS_LIST) {
-                // Process arguments - they might be in an EXPRESSION_LIST
+                // Collect all arguments from the nested EXPRESSION_LIST structure
+                std::vector<ASTNode*> args;
+                
                 for (size_t j = 0; j < child->getChildren().size(); j++) {
-                    ASTNode* argChild = child->getChildren()[j];
+                    collectExpressionListArgs(child->getChildren()[j], args);
+                }
+                
+                // Generate ARG TACs in correct order (not reversed)
+                for (size_t k = 0; k < args.size(); k++) {
+                    ASTNode* arg = args[k];
+                    TAC* argCode = generateTAC(arg);
+                    Symbol* argSymbol = getResultSymbol(argCode, arg);
                     
-                    if (argChild->getType() == ASTNodeType::EXPRESSION_LIST) {
-                        // Process each expression in the list in reverse order for stack
-                        for (size_t k = argChild->getChildren().size(); k > 0; k--) {
-                            ASTNode* arg = argChild->getChildren()[k-1];
-                            TAC* argCode = generateTAC(arg);
-                            Symbol* argSymbol = getResultSymbol(argCode, arg);
-                            
-                            TAC* argTac = tacCreate(TACType::ARG, nullptr, argSymbol, nullptr);
-                            result = tacJoin(result, argCode);
-                            result = tacJoin(result, argTac);
-                        }
-                    } else {
-                        // Direct argument
-                        TAC* argCode = generateTAC(argChild);
-                        Symbol* argSymbol = getResultSymbol(argCode, argChild);
-                        
-                        TAC* argTac = tacCreate(TACType::ARG, nullptr, argSymbol, nullptr);
-                        result = tacJoin(result, argCode);
-                        result = tacJoin(result, argTac);
-                    }
+                    TAC* argTac = tacCreate(TACType::ARG, nullptr, argSymbol, nullptr);
+                    result = tacJoin(result, argCode);
+                    result = tacJoin(result, argTac);
                 }
             } else {
                 // Process single argument
@@ -595,15 +604,74 @@ TAC* generateReturn(ASTNode* node) {
     return tacJoin(valueCode, retTac);
 }
 
+// Helper function to process print list recursively
+TAC* processPrintList(ASTNode* node) {
+    if (node == nullptr) return nullptr;
+    
+    TAC* result = nullptr;
+    
+    // Process current node based on its type
+    if (node->getType() == ASTNodeType::LITERAL || 
+        node->getType() == ASTNodeType::SYMBOL ||
+        node->getType() == ASTNodeType::VECTOR_ACCESS ||
+        node->getType() == ASTNodeType::FUNCTION_CALL ||
+        node->getType() == ASTNodeType::ADD ||
+        node->getType() == ASTNodeType::SUBTRACT ||
+        node->getType() == ASTNodeType::MULTIPLY ||
+        node->getType() == ASTNodeType::DIVIDE ||
+        node->getType() == ASTNodeType::MODULO ||
+        node->getType() == ASTNodeType::LESS_THAN ||
+        node->getType() == ASTNodeType::GREATER_THAN ||
+        node->getType() == ASTNodeType::LESS_EQUAL ||
+        node->getType() == ASTNodeType::GREATER_EQUAL ||
+        node->getType() == ASTNodeType::EQUAL ||
+        node->getType() == ASTNodeType::DIFFERENT ||
+        node->getType() == ASTNodeType::AND ||
+        node->getType() == ASTNodeType::OR ||
+        node->getType() == ASTNodeType::NOT) {
+        
+        // For VECTOR_ACCESS, we need to handle it specially
+        if (node->getType() == ASTNodeType::VECTOR_ACCESS && node->getChildren().size() >= 2) {
+            // Create a temporary VECTOR_ACCESS node with only vector and index (first 2 children)
+            ASTNode tempVectorAccess(ASTNodeType::VECTOR_ACCESS, nullptr, {}, node->getLineNumber());
+            tempVectorAccess.addChild(node->getChildren()[0]); // vector symbol
+            tempVectorAccess.addChild(node->getChildren()[1]); // index
+            
+            // Generate TAC for vector access
+            TAC* valueCode = generateTAC(&tempVectorAccess);
+            Symbol* valueSymbol = getResultSymbol(valueCode, &tempVectorAccess);
+            
+            TAC* printTac = tacCreate(TACType::PRINT, nullptr, valueSymbol, nullptr);
+            result = tacJoin(valueCode, printTac);
+            
+            // Process the remaining children as the next items in the print list
+            if (node->getChildren().size() > 2) {
+                TAC* nextTac = processPrintList(node->getChildren()[2]);
+                result = tacJoin(result, nextTac);
+            }
+        } else {
+            // For other types, just generate normal TAC
+            TAC* valueCode = generateTAC(node);
+            Symbol* valueSymbol = getResultSymbol(valueCode, node);
+            
+            TAC* printTac = tacCreate(TACType::PRINT, nullptr, valueSymbol, nullptr);
+            result = tacJoin(valueCode, printTac);
+            
+            // Process the next item in the list (first child)
+            if (!node->getChildren().empty()) {
+                TAC* nextTac = processPrintList(node->getChildren()[0]);
+                result = tacJoin(result, nextTac);
+            }
+        }
+    }
+    
+    return result;
+}
+
 TAC* generatePrint(ASTNode* node) {
     if (node->getChildren().empty()) return nullptr;
     
-    TAC* valueCode = generateTAC(node->getChildren()[0]);
-    Symbol* valueSymbol = getResultSymbol(valueCode, node->getChildren()[0]);
-    
-    TAC* printTac = tacCreate(TACType::PRINT, nullptr, valueSymbol, nullptr);
-    
-    return tacJoin(valueCode, printTac);
+    return processPrintList(node->getChildren()[0]);
 }
 
 TAC* generateRead(ASTNode* node) {
@@ -683,7 +751,7 @@ TAC* generateVariableDeclaration(ASTNode* node) {
             TAC* valueCode = generateTAC(valueNode);
             Symbol* valueSymbol = getResultSymbol(valueCode, valueNode);
             
-            TAC* assignTac = tacCreate(TACType::MOVE, varSymbol, valueSymbol, nullptr);
+            TAC* assignTac = tacCreate(TACType::INIT, varSymbol, valueSymbol, nullptr);
             return tacJoin(valueCode, assignTac);
         }
     }
@@ -692,20 +760,45 @@ TAC* generateVariableDeclaration(ASTNode* node) {
     return nullptr;
 }
 
+// Helper function to extract initialization values from nested VECTOR_INITIALIZATION nodes
+void extractInitValues(ASTNode* initNode, std::vector<Symbol*>& values) {
+    if (!initNode) return;
+    
+    // If this node has children, recursively process them
+    for (ASTNode* child : initNode->getChildren()) {
+        if (child->getType() == ASTNodeType::LITERAL ||
+            child->getType() == ASTNodeType::INT ||
+            child->getType() == ASTNodeType::REAL ||
+            child->getType() == ASTNodeType::CHAR ||
+            child->getType() == ASTNodeType::BYTE) {
+            values.push_back(child->getSymbol());
+        } else if (child->getType() == ASTNodeType::VECTOR_INITIALIZATION) {
+            extractInitValues(child, values);
+        }
+    }
+}
+
 TAC* generateVectorDeclaration(ASTNode* node) {
     if (!node || node->getChildren().empty()) return nullptr;
     
-    // Get vector symbol and size
+    // Get vector symbol, size, and initialization values
     Symbol* vectorSymbol = nullptr;
     Symbol* sizeSymbol = nullptr;
+    ASTNode* initNode = nullptr;
     
-    // Find vector symbol and size in children
+    // Find vector symbol, size, and initialization node in children
     for (size_t i = 0; i < node->getChildren().size(); i++) {
         ASTNode* child = node->getChildren()[i];
         if (child->getType() == ASTNodeType::SYMBOL && !vectorSymbol) {
             vectorSymbol = child->getSymbol();
-        } else if (!sizeSymbol) {
-            sizeSymbol = child->getSymbol();
+        } else if ((child->getType() == ASTNodeType::LITERAL || 
+                   child->getType() == ASTNodeType::INT || 
+                   child->getType() == ASTNodeType::REAL || 
+                   child->getType() == ASTNodeType::CHAR ||
+                   child->getType() == ASTNodeType::BYTE) && !sizeSymbol) {
+            sizeSymbol = child->getSymbol(); // First literal is size
+        } else if (child->getType() == ASTNodeType::VECTOR_INITIALIZATION) {
+            initNode = child; // Initialization values
         }
     }
     
@@ -717,22 +810,46 @@ TAC* generateVectorDeclaration(ASTNode* node) {
     TAC* beginVecTac = tacCreate(TACType::BEGINVEC, nullptr, vectorSymbol, sizeSymbol);
     result = tacJoin(result, beginVecTac);
     
-    // Initialize all positions with zero
-    // We need to get the size from the symbol's lexeme and convert to integer
+    // Get vector size
     std::string sizeStr = sizeSymbol->getLexeme();
     int vectorSize = std::stoi(sizeStr);
     
-    // Create zero symbol
-    Symbol* zeroSymbol = insertSymbol("0", 0, 1);
-    
-    // Initialize each position with zero
-    for (int i = 0; i < vectorSize; i++) {
-        std::stringstream ss;
-        ss << i;
-        Symbol* indexSymbol = insertSymbol(ss.str(), 0, 1);
+    // If there's an initialization node, extract values from it
+    if (initNode) {
+        std::vector<Symbol*> initValues;
+        extractInitValues(initNode, initValues);
         
-        TAC* vecwriteTac = tacCreate(TACType::VECWRITE, vectorSymbol, indexSymbol, zeroSymbol);
-        result = tacJoin(result, vecwriteTac);
+        // Initialize with provided values
+        for (size_t i = 0; i < initValues.size() && (int)i < vectorSize; i++) {
+            std::stringstream ss;
+            ss << i;
+            Symbol* indexSymbol = insertSymbol(ss.str(), 0, 1);
+            
+            TAC* vecwriteTac = tacCreate(TACType::VECWRITE, vectorSymbol, indexSymbol, initValues[i]);
+            result = tacJoin(result, vecwriteTac);
+        }
+        
+        // Fill remaining positions with zeros if vector is larger than init values
+        Symbol* zeroSymbol = insertSymbol("0", 0, 1);
+        for (size_t i = initValues.size(); (int)i < vectorSize; i++) {
+            std::stringstream ss;
+            ss << i;
+            Symbol* indexSymbol = insertSymbol(ss.str(), 0, 1);
+            
+            TAC* vecwriteTac = tacCreate(TACType::VECWRITE, vectorSymbol, indexSymbol, zeroSymbol);
+            result = tacJoin(result, vecwriteTac);
+        }
+    } else {
+        // Initialize all positions with zero (no explicit initialization)
+        Symbol* zeroSymbol = insertSymbol("0", 0, 1);
+        for (int i = 0; i < vectorSize; i++) {
+            std::stringstream ss;
+            ss << i;
+            Symbol* indexSymbol = insertSymbol(ss.str(), 0, 1);
+            
+            TAC* vecwriteTac = tacCreate(TACType::VECWRITE, vectorSymbol, indexSymbol, zeroSymbol);
+            result = tacJoin(result, vecwriteTac);
+        }
     }
     
     // End vector initialization
@@ -812,6 +929,7 @@ std::string tacTypeToString(TACType type) {
     switch (type) {
         case TACType::SYMBOL: return "SYMBOL";
         case TACType::MOVE: return "MOVE";
+        case TACType::INIT: return "INIT";
         case TACType::ADD: return "ADD";
         case TACType::SUB: return "SUB";
         case TACType::MUL: return "MUL";

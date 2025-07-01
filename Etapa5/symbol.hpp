@@ -12,7 +12,7 @@ using namespace std;
 enum class dataType {
     BYTE,       // 8-bit signed integer
     INT,        // 32-bit signed integer
-    REAL,       // Floating-point number
+    REAL,       // Number in the format a/b
     BOOLEAN,    // Boolean value (true/false)
     CHAR,       // Single character
     STRING,     // String literal

@@ -64,4 +64,4 @@ clean:
 .PHONY: tgz
 tgz: clean
 	@touch $(PROJECT).tgz
-	@tar cvzf $(PROJECT).tgz --add-file=Makefile --add-file=ast.cpp --add-file=ast.hpp --add-file=main.cpp --add-file=parser.ypp --add-file=scanner.l --add-file=symbol.cpp --add-file=symbol.hpp --add-file=$(PROJECT).txt --add-file=verifications.cpp --add-file=verifications.hpp --add-file=tac.cpp --add-file=tac.hpp
+	@tar cvzf $(PROJECT).tgz --add-file=Makefile --add-file=ast.cpp --add-file=ast.hpp --add-file=main.cpp --add-file=parser.ypp --add-file=scanner.l --add-file=symbol.cpp --add-file=symbol.hpp --add-file=$(PROJECT).txt --add-file=verifications.cpp --add-file=verifications.hpp --add-file=tac.cpp --add-file=tac.hpp 
