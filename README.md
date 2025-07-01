@@ -36,7 +36,17 @@ The stages are as follows:
 - Function parameter and return type validation
 - Appropriate error reporting with line numbers
 
-### Stage 5 (Etapa5): Intermediate Code Generation ⏳
+### [Stage 5 (Etapa5)](./Etapa5/): Intermediate Code Generation ✅
+
+- Implementation of Three Address Code (TAC) generation
+- Translation of AST nodes to intermediate representation
+- Support for arithmetic, logical, and comparison operations
+- Control flow code generation (if, while, do-while statements)
+- Function call and declaration code generation
+- Vector operations and I/O operations in TAC format
+- Automatic generation of temporary variables and labels
+- Foundation for code optimization and target code generation
+
 
 ## 2025++1 Language Specification
 

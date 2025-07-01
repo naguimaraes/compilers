@@ -1,26 +1,41 @@
-# Stage 4 - Semantic Verification
+# Stage 5 - Intermediate Code Generation (TAC)
 
-## Semantic Verification
+## Three Address Code (TAC)
 
-Semantic verification is the phase of compilation that ensures the code adheres to the language's semantic rules. While syntax analysis confirms the code follows grammatical rules, semantic verification ensures operations are meaningful and consistent. This stage checks for issues like type compatibility, undeclared variables, and redeclarations.
+Three Address Code (TAC) is an intermediate representation of the source code that simplifies the structure of expressions and statements. Each TAC instruction has at most three operands: two source operands and one destination operand. This representation is closer to assembly language but still maintains some abstraction from the target machine architecture.
 
-### Implementation of Semantic Verification
+### TAC Generation
 
-The semantic analyzer, implemented in `verifications.cpp` and `verifications.hpp`, performs several checks on the Abstract Syntax Tree (AST) constructed during the parsing phase:
+The TAC generation process traverses the Abstract Syntax Tree (AST) and translates high-level language constructs into a sequence of simple three-address instructions. The implementation is found in `tac.hpp` and `tac.cpp`, where each type of AST node is translated to its corresponding TAC instructions.
 
-1. **Variable and Function Declarations**: Ensures all identifiers are properly declared before use and detects redeclarations.
-2. **Type Checking**: Verifies type compatibility in expressions, assignments, and function calls.
-3. **Vector Access Validation**: Checks that vector indices are of appropriate types.
-4. **Function Return Types**: Ensures return statements match the declared function return type.
-5. **Function Parameter Consistency**: Validates that function calls provide the correct number and types of arguments.
+#### TAC Instruction Types
 
-### Error Reporting
+The compiler supports the following TAC instruction types:
 
-When semantic errors are detected, detailed error messages are generated that include:
+- **Arithmetic Operations**: ADD, SUB, MUL, DIV, MOD
+- **Logical Operations**: AND, OR, NOT
+- **Comparison Operations**: LT, GT, LE, GE, EQ, NE
+- **Assignment Operations**: MOVE, INIT
+- **Control Flow**: LABEL, IFZ (conditional jump), JUMP (unconditional jump)
+- **Function Operations**: BEGINFUN, ENDFUN, CALL, ARG, RET
+- **I/O Operations**: PRINT, READ
+- **Vector Operations**: VECREAD, VECWRITE, BEGINVEC, ENDVEC
 
-- Line number where the error occurred
-- Description of the error
-- Contextual information (e.g., variable names, expected vs. actual types)
+### Temporary Variables and Labels
+
+During code generation, the compiler automatically creates:
+
+- **Temporary variables** (e.g., `temp0`, `temp1`) to store intermediate results
+- **Labels** (e.g., `label0`, `label1`) for control flow instructions
+
+### TAC Output Format
+
+The generated TAC is displayed in a table format showing:
+
+- Instruction type
+- Result operand
+- First operand  
+- Second operand
 
 ## Project Compilation and Execution
 
@@ -39,26 +54,13 @@ make run
 or
 
 ```bash
-./etapa4 input.txt output.txt
+./etapa5 input.txt output.txt
 ```
 
 Where:
 
-- `input.txt` is the file with 2025++1 source code. A sample input file is provided in the repository, named `etapa4.txt`.
+- `input.txt` is the file with 2025++1 source code. A sample input file is provided in the repository, named `etapa5.txt`.
 - `output.txt` is the file where the decompiled code will be written
-
-The compiler will perform both syntactic analysis and semantic verification. If semantic errors are detected, detailed error messages will be displayed, and the program will exit with code 4.
-
-## Error Cases
-
-The semantic analyzer can detect and report various types of errors:
-
-1. **Type Mismatches**: When expressions or assignments involve incompatible types.
-2. **Undeclared Identifiers**: When variables, vectors, or functions are used without declaration.
-3. **Redeclarations**: When an identifier is declared multiple times in the same scope.
-4. **Invalid Vector Operations**: Improper index types or out-of-bounds access.
-5. **Function Call Errors**: Wrong number of arguments or type mismatches.
-6. **Return Statement Errors**: Missing return statements or type mismatches.
 
 ## Cleaning the Project
 
@@ -75,8 +77,23 @@ This command will remove all object files, the executable, and any other generat
 - `scanner.l`: Lexical analyzer specification
 - `parser.ypp`: Syntactic analyzer grammar
 - `ast.hpp` and `ast.cpp`: Abstract Syntax Tree implementation
-- `symbol.hpp` and `symbol.cpp`: Symbol table management with enhanced type support
-- `verifications.hpp` and `verifications.cpp`: Semantic verification implementation
-- `main.cpp`: Program entry point with semantic verification integration
+- `symbol.hpp` and `symbol.cpp`: Symbol table management
+- `verifications.hpp` and `verifications.cpp`: Semantic analysis implementation
+- `tac.hpp` and `tac.cpp`: Three Address Code generation implementation
+- `main.cpp`: Program entry point
 - `Makefile`: Compilation instructions
-- `spect4.pdf`: PDF with the specification of this stage, in Portuguese
+- `spect5.pdf`: PDF with the specification of this stage, in portuguese
+
+## TAC Generation Features
+
+This stage implements comprehensive TAC generation for:
+
+- **Variable declarations and assignments**
+- **Arithmetic and logical expressions**
+- **Control flow structures** (if statements, while loops, do-while loops)
+- **Function declarations and calls**
+- **Vector operations** (declaration, access, assignment)
+- **I/O operations** (print and read statements)
+- **Type-aware code generation** with proper temporary variable management
+
+The generated TAC provides a solid foundation for further optimization phases and target code generation in subsequent compiler stages.
