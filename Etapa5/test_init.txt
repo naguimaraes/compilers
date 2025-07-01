@@ -1,0 +1,10 @@
+// Teste para inicialização explícita de vetores
+
+// Vetor com inicialização explícita
+int initialized_vector[3] = 10, 20, 30;
+
+int main() {
+    // Acessar o vetor para ver se gera TACs corretas
+    int value = initialized_vector[1];
+    return 0;
+}

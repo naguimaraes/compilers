@@ -22,7 +22,7 @@ TAC* generateBinaryOp(ASTNode* node);
 TAC* generateUnaryOp(ASTNode* node);
 TAC* generateAssignment(ASTNode* node);
 TAC* generateVariableDeclaration(ASTNode* node);
-TAC* generateVectorDeclaration();
+TAC* generateVectorDeclaration(ASTNode* node);
 TAC* generateVectorInitialization(ASTNode* node);
 TAC* generateIf(ASTNode* node);
 TAC* generateWhile(ASTNode* node);
@@ -293,7 +293,7 @@ TAC* generateCode(ASTNode* node) {
             return generateVariableDeclaration(node);
             
         case ASTNodeType::VECTOR_DECLARATION:
-            return generateVectorDeclaration();
+            return generateVectorDeclaration(node);
             
         case ASTNodeType::VECTOR_INITIALIZATION:
             return generateVectorInitialization(node);
@@ -692,10 +692,54 @@ TAC* generateVariableDeclaration(ASTNode* node) {
     return nullptr;
 }
 
-TAC* generateVectorDeclaration() {
-    // Vector declaration without initialization - no TAC needed
-    // Vector space is allocated at compile/runtime
-    return nullptr;
+TAC* generateVectorDeclaration(ASTNode* node) {
+    if (!node || node->getChildren().empty()) return nullptr;
+    
+    // Get vector symbol and size
+    Symbol* vectorSymbol = nullptr;
+    Symbol* sizeSymbol = nullptr;
+    
+    // Find vector symbol and size in children
+    for (size_t i = 0; i < node->getChildren().size(); i++) {
+        ASTNode* child = node->getChildren()[i];
+        if (child->getType() == ASTNodeType::SYMBOL && !vectorSymbol) {
+            vectorSymbol = child->getSymbol();
+        } else if (!sizeSymbol) {
+            sizeSymbol = child->getSymbol();
+        }
+    }
+    
+    if (!vectorSymbol || !sizeSymbol) return nullptr;
+    
+    TAC* result = nullptr;
+    
+    // Begin vector initialization
+    TAC* beginVecTac = tacCreate(TACType::TAC_BEGINVEC, nullptr, vectorSymbol, sizeSymbol);
+    result = tacJoin(result, beginVecTac);
+    
+    // Initialize all positions with zero
+    // We need to get the size from the symbol's lexeme and convert to integer
+    std::string sizeStr = sizeSymbol->getLexeme();
+    int vectorSize = std::stoi(sizeStr);
+    
+    // Create zero symbol
+    Symbol* zeroSymbol = insertSymbol("0", 0, 1);
+    
+    // Initialize each position with zero
+    for (int i = 0; i < vectorSize; i++) {
+        std::stringstream ss;
+        ss << i;
+        Symbol* indexSymbol = insertSymbol(ss.str(), 0, 1);
+        
+        TAC* vecwriteTac = tacCreate(TACType::TAC_VECWRITE, vectorSymbol, indexSymbol, zeroSymbol);
+        result = tacJoin(result, vecwriteTac);
+    }
+    
+    // End vector initialization
+    TAC* endVecTac = tacCreate(TACType::TAC_ENDVEC, nullptr, vectorSymbol, nullptr);
+    result = tacJoin(result, endVecTac);
+    
+    return result;
 }
 
 TAC* generateVectorInitialization(ASTNode* node) {
@@ -704,6 +748,10 @@ TAC* generateVectorInitialization(ASTNode* node) {
     
     if (node->getChildren().size() > 1) {
         Symbol* vectorSymbol = node->getChildren()[0]->getSymbol();
+        
+        // Begin vector initialization
+        TAC* beginVecTac = tacCreate(TACType::TAC_BEGINVEC, nullptr, vectorSymbol, nullptr);
+        result = tacJoin(result, beginVecTac);
         
         // Generate VECWRITE for each initialization value
         for (size_t i = 1; i < node->getChildren().size(); i++) {
@@ -719,6 +767,10 @@ TAC* generateVectorInitialization(ASTNode* node) {
             result = tacJoin(result, valueCode);
             result = tacJoin(result, vecwriteTac);
         }
+        
+        // End vector initialization
+        TAC* endVecTac = tacCreate(TACType::TAC_ENDVEC, nullptr, vectorSymbol, nullptr);
+        result = tacJoin(result, endVecTac);
     }
     
     return result;
@@ -786,6 +838,8 @@ std::string tacTypeToString(TACType type) {
         case TACType::TAC_READ: return "READ";
         case TACType::TAC_VECWRITE: return "VECWRITE";
         case TACType::TAC_VECREAD: return "VECREAD";
+        case TACType::TAC_BEGINVEC: return "BEGINVEC";
+        case TACType::TAC_ENDVEC: return "ENDVEC";
         default: return "UNKNOWN";
     }
 }

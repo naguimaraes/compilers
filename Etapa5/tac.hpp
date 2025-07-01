@@ -36,7 +36,9 @@ enum class TACType {
     TAC_PRINT,      // Print: print a
     TAC_READ,       // Read: read a
     TAC_VECWRITE,   // Vector write: a[b] = c
-    TAC_VECREAD     // Vector read: a = b[c]
+    TAC_VECREAD,    // Vector read: a = b[c]
+    TAC_BEGINVEC,   // Begin vector initialization
+    TAC_ENDVEC      // End vector initialization
 };
 
 // TAC instruction structure

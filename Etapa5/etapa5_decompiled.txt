@@ -5,7 +5,7 @@ int number = 'A';
 int x = 1;
 int y = 1;
 int v[01] = 'a', 04, 'b', 500, 10, 0, 0, 0, 0, 7;
-int matrix[001];
+int matrix[01];
 real r[10000000000000] = 1/2;
 real num = 5/7;
 int main() {

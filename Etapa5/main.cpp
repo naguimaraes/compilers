@@ -61,7 +61,7 @@ int main(int argc, char **argv){
         fprintf(stderr, "Semantic analysis completed successfully - no errors found.\n");
     }
 
-    fprintf(stderr, "\n======== TAC Generation ========\n");
+    fprintf(stderr, "\n====================  TAC Generation ====================\n");
     initTAC();
     TAC* tacCode = generateCode(root);
     if (tacCode) {
