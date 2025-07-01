@@ -41,7 +41,7 @@ static int labelCounter = 0;
 
 // TAC class implementation
 TAC::TAC(TACType type, Symbol* res, Symbol* op1, Symbol* op2) 
-    : type(type), res(res), op1(op1), op2(op2), prev(nullptr), next(nullptr) {
+    : type(type), result(res), operand1(op1), operand2(op2), previous(nullptr), next(nullptr) {
 }
 
 TAC::~TAC() {
@@ -53,19 +53,19 @@ TACType TAC::getType() const {
 }
 
 Symbol* TAC::getRes() const {
-    return res;
+    return result;
 }
 
 Symbol* TAC::getOp1() const {
-    return op1;
+    return operand1;
 }
 
 Symbol* TAC::getOp2() const {
-    return op2;
+    return operand2;
 }
 
 TAC* TAC::getPrev() const {
-    return prev;
+    return previous;
 }
 
 TAC* TAC::getNext() const {
@@ -73,7 +73,7 @@ TAC* TAC::getNext() const {
 }
 
 void TAC::setPrev(TAC* prev) {
-    this->prev = prev;
+    this->previous = prev;
 }
 
 void TAC::setNext(TAC* next) {
@@ -95,16 +95,16 @@ std::string truncateString(const std::string& str, size_t maxWidth) {
 }
 
 void TAC::print() const {
-    // Don't print TAC_SYMBOL as they are utility instructions
-    if (type == TACType::TAC_SYMBOL) {
+    // Don't print SYMBOL as they are utility instructions
+    if (type == TACType::SYMBOL) {
         return;
     }
     
     // Get strings and truncate if necessary
     std::string typeStr = tacTypeToString(type);
-    std::string resStr = res ? res->getLexeme() : "";
-    std::string op1Str = op1 ? op1->getLexeme() : "";
-    std::string op2Str = op2 ? op2->getLexeme() : "";
+    std::string resStr = result ? result->getLexeme() : "";
+    std::string op1Str = operand1 ? operand1->getLexeme() : "";
+    std::string op2Str = operand2 ? operand2->getLexeme() : "";
     
     // Truncate strings to fit in 12-character columns
     typeStr = truncateString(typeStr, 11); // 11 to leave space for proper alignment
@@ -167,7 +167,7 @@ TAC* tacReverse(TAC* tac) {
     return newHead;
 }
 
-void tacPrint(TAC* tac) {
+void printTAC(TAC* tac) {
     if (!tac) return;
     
     // Print table header
@@ -250,7 +250,7 @@ Symbol* makeLabel() {
 }
 
 // Main code generation function
-TAC* generateCode(ASTNode* node) {
+TAC* generateTAC(ASTNode* node) {
     if (!node) return nullptr;
     
     switch (node->getType()) {
@@ -330,7 +330,7 @@ TAC* generateCode(ASTNode* node) {
         case ASTNodeType::EXPRESSION_LIST: {
             TAC* result = nullptr;
             for (ASTNode* child : node->getChildren()) {
-                TAC* childCode = generateCode(child);
+                TAC* childCode = generateTAC(child);
                 result = tacJoin(result, childCode);
             }
             return result;
@@ -340,7 +340,7 @@ TAC* generateCode(ASTNode* node) {
             // For other node types, process children
             TAC* result = nullptr;
             for (ASTNode* child : node->getChildren()) {
-                TAC* childCode = generateCode(child);
+                TAC* childCode = generateTAC(child);
                 result = tacJoin(result, childCode);
             }
             return result;
@@ -350,8 +350,8 @@ TAC* generateCode(ASTNode* node) {
 TAC* generateBinaryOp(ASTNode* node) {
     if (node->getChildren().size() < 2) return nullptr;
     
-    TAC* leftCode = generateCode(node->getChildren()[0]);
-    TAC* rightCode = generateCode(node->getChildren()[1]);
+    TAC* leftCode = generateTAC(node->getChildren()[0]);
+    TAC* rightCode = generateTAC(node->getChildren()[1]);
     
     Symbol* temp = makeTemp();
     Symbol* leftSymbol = nullptr;
@@ -363,20 +363,20 @@ TAC* generateBinaryOp(ASTNode* node) {
     
     TACType tacType;
     switch (node->getType()) {
-        case ASTNodeType::ADD: tacType = TACType::TAC_ADD; break;
-        case ASTNodeType::SUBTRACT: tacType = TACType::TAC_SUB; break;
-        case ASTNodeType::MULTIPLY: tacType = TACType::TAC_MUL; break;
-        case ASTNodeType::DIVIDE: tacType = TACType::TAC_DIV; break;
-        case ASTNodeType::MODULO: tacType = TACType::TAC_MOD; break;
-        case ASTNodeType::AND: tacType = TACType::TAC_AND; break;
-        case ASTNodeType::OR: tacType = TACType::TAC_OR; break;
-        case ASTNodeType::LESS_THAN: tacType = TACType::TAC_LT; break;
-        case ASTNodeType::GREATER_THAN: tacType = TACType::TAC_GT; break;
-        case ASTNodeType::LESS_EQUAL: tacType = TACType::TAC_LE; break;
-        case ASTNodeType::GREATER_EQUAL: tacType = TACType::TAC_GE; break;
-        case ASTNodeType::EQUAL: tacType = TACType::TAC_EQ; break;
-        case ASTNodeType::DIFFERENT: tacType = TACType::TAC_NE; break;
-        default: tacType = TACType::TAC_MOVE; break;
+        case ASTNodeType::ADD: tacType = TACType::ADD; break;
+        case ASTNodeType::SUBTRACT: tacType = TACType::SUB; break;
+        case ASTNodeType::MULTIPLY: tacType = TACType::MUL; break;
+        case ASTNodeType::DIVIDE: tacType = TACType::DIV; break;
+        case ASTNodeType::MODULO: tacType = TACType::MOD; break;
+        case ASTNodeType::AND: tacType = TACType::AND; break;
+        case ASTNodeType::OR: tacType = TACType::OR; break;
+        case ASTNodeType::LESS_THAN: tacType = TACType::LT; break;
+        case ASTNodeType::GREATER_THAN: tacType = TACType::GT; break;
+        case ASTNodeType::LESS_EQUAL: tacType = TACType::LE; break;
+        case ASTNodeType::GREATER_EQUAL: tacType = TACType::GE; break;
+        case ASTNodeType::EQUAL: tacType = TACType::EQ; break;
+        case ASTNodeType::DIFFERENT: tacType = TACType::NE; break;
+        default: tacType = TACType::MOVE; break;
     }
     
     TAC* opTac = tacCreate(tacType, temp, leftSymbol, rightSymbol);
@@ -390,14 +390,14 @@ TAC* generateBinaryOp(ASTNode* node) {
 TAC* generateUnaryOp(ASTNode* node) {
     if (node->getChildren().empty()) return nullptr;
     
-    TAC* operandCode = generateCode(node->getChildren()[0]);
+    TAC* operandCode = generateTAC(node->getChildren()[0]);
     Symbol* temp = makeTemp();
     Symbol* operandSymbol = getResultSymbol(operandCode, node->getChildren()[0]);
     
     TACType tacType;
     switch (node->getType()) {
-        case ASTNodeType::NOT: tacType = TACType::TAC_NOT; break;
-        default: tacType = TACType::TAC_MOVE; break;
+        case ASTNodeType::NOT: tacType = TACType::NOT; break;
+        default: tacType = TACType::MOVE; break;
     }
     
     TAC* opTac = tacCreate(tacType, temp, operandSymbol, nullptr);
@@ -413,11 +413,11 @@ TAC* generateAssignment(ASTNode* node) {
         return generateVectorAssignment(node);
     }
     
-    TAC* valueCode = generateCode(node->getChildren()[1]);
+    TAC* valueCode = generateTAC(node->getChildren()[1]);
     Symbol* target = node->getChildren()[0]->getSymbol();
     Symbol* valueSymbol = getResultSymbol(valueCode, node->getChildren()[1]);
     
-    TAC* assignTac = tacCreate(TACType::TAC_MOVE, target, valueSymbol, nullptr);
+    TAC* assignTac = tacCreate(TACType::MOVE, target, valueSymbol, nullptr);
     
     return tacJoin(valueCode, assignTac);
 }
@@ -425,12 +425,12 @@ TAC* generateAssignment(ASTNode* node) {
 TAC* generateIf(ASTNode* node) {
     if (node->getChildren().size() < 2) return nullptr;
     
-    TAC* conditionCode = generateCode(node->getChildren()[0]);
-    TAC* thenCode = generateCode(node->getChildren()[1]);
+    TAC* conditionCode = generateTAC(node->getChildren()[0]);
+    TAC* thenCode = generateTAC(node->getChildren()[1]);
     TAC* elseCode = nullptr;
     
     if (node->getChildren().size() > 2) {
-        elseCode = generateCode(node->getChildren()[2]);
+        elseCode = generateTAC(node->getChildren()[2]);
     }
     
     Symbol* conditionSymbol = getResultSymbol(conditionCode, node->getChildren()[0]);
@@ -438,15 +438,15 @@ TAC* generateIf(ASTNode* node) {
     Symbol* elseLabel = makeLabel();
     Symbol* endLabel = makeLabel();
     
-    TAC* ifzTac = tacCreate(TACType::TAC_IFZ, nullptr, conditionSymbol, elseLabel);
-    TAC* elseLabelTac = tacCreate(TACType::TAC_LABEL, nullptr, elseLabel, nullptr);
-    TAC* endLabelTac = tacCreate(TACType::TAC_LABEL, nullptr, endLabel, nullptr);
+    TAC* ifzTac = tacCreate(TACType::IFZ, nullptr, conditionSymbol, elseLabel);
+    TAC* elseLabelTac = tacCreate(TACType::LABEL, nullptr, elseLabel, nullptr);
+    TAC* endLabelTac = tacCreate(TACType::LABEL, nullptr, endLabel, nullptr);
     
     TAC* result = tacJoin(conditionCode, ifzTac);
     result = tacJoin(result, thenCode);
     
     if (elseCode) {
-        TAC* jumpTac = tacCreate(TACType::TAC_JUMP, nullptr, endLabel, nullptr);
+        TAC* jumpTac = tacCreate(TACType::JUMP, nullptr, endLabel, nullptr);
         result = tacJoin(result, jumpTac);
         result = tacJoin(result, elseLabelTac);
         result = tacJoin(result, elseCode);
@@ -464,15 +464,15 @@ TAC* generateWhile(ASTNode* node) {
     Symbol* beginLabel = makeLabel();
     Symbol* endLabel = makeLabel();
     
-    TAC* beginLabelTac = tacCreate(TACType::TAC_LABEL, nullptr, beginLabel, nullptr);
-    TAC* conditionCode = generateCode(node->getChildren()[0]);
-    TAC* bodyCode = generateCode(node->getChildren()[1]);
+    TAC* beginLabelTac = tacCreate(TACType::LABEL, nullptr, beginLabel, nullptr);
+    TAC* conditionCode = generateTAC(node->getChildren()[0]);
+    TAC* bodyCode = generateTAC(node->getChildren()[1]);
     
     Symbol* conditionSymbol = getResultSymbol(conditionCode, node->getChildren()[0]);
     
-    TAC* ifzTac = tacCreate(TACType::TAC_IFZ, nullptr, conditionSymbol, endLabel);
-    TAC* jumpTac = tacCreate(TACType::TAC_JUMP, nullptr, beginLabel, nullptr);
-    TAC* endLabelTac = tacCreate(TACType::TAC_LABEL, nullptr, endLabel, nullptr);
+    TAC* ifzTac = tacCreate(TACType::IFZ, nullptr, conditionSymbol, endLabel);
+    TAC* jumpTac = tacCreate(TACType::JUMP, nullptr, beginLabel, nullptr);
+    TAC* endLabelTac = tacCreate(TACType::LABEL, nullptr, endLabel, nullptr);
     
     TAC* result = tacJoin(beginLabelTac, conditionCode);
     result = tacJoin(result, ifzTac);
@@ -513,29 +513,29 @@ TAC* generateFunctionCall(ASTNode* node) {
                         // Process each expression in the list in reverse order for stack
                         for (size_t k = argChild->getChildren().size(); k > 0; k--) {
                             ASTNode* arg = argChild->getChildren()[k-1];
-                            TAC* argCode = generateCode(arg);
+                            TAC* argCode = generateTAC(arg);
                             Symbol* argSymbol = getResultSymbol(argCode, arg);
                             
-                            TAC* argTac = tacCreate(TACType::TAC_ARG, nullptr, argSymbol, nullptr);
+                            TAC* argTac = tacCreate(TACType::ARG, nullptr, argSymbol, nullptr);
                             result = tacJoin(result, argCode);
                             result = tacJoin(result, argTac);
                         }
                     } else {
                         // Direct argument
-                        TAC* argCode = generateCode(argChild);
+                        TAC* argCode = generateTAC(argChild);
                         Symbol* argSymbol = getResultSymbol(argCode, argChild);
                         
-                        TAC* argTac = tacCreate(TACType::TAC_ARG, nullptr, argSymbol, nullptr);
+                        TAC* argTac = tacCreate(TACType::ARG, nullptr, argSymbol, nullptr);
                         result = tacJoin(result, argCode);
                         result = tacJoin(result, argTac);
                     }
                 }
             } else {
                 // Process single argument
-                TAC* argCode = generateCode(child);
+                TAC* argCode = generateTAC(child);
                 Symbol* argSymbol = getResultSymbol(argCode, child);
                 
-                TAC* argTac = tacCreate(TACType::TAC_ARG, nullptr, argSymbol, nullptr);
+                TAC* argTac = tacCreate(TACType::ARG, nullptr, argSymbol, nullptr);
                 result = tacJoin(result, argCode);
                 result = tacJoin(result, argTac);
             }
@@ -545,7 +545,7 @@ TAC* generateFunctionCall(ASTNode* node) {
     }
     
     Symbol* temp = makeTemp();
-    TAC* callTac = tacCreate(TACType::TAC_CALL, temp, functionSymbol, nullptr);
+    TAC* callTac = tacCreate(TACType::CALL, temp, functionSymbol, nullptr);
     result = tacJoin(result, callTac);
     
     return result;
@@ -565,15 +565,15 @@ TAC* generateFunctionDeclaration(ASTNode* node) {
         }
     }
     
-    TAC* beginTac = tacCreate(TACType::TAC_BEGINFUN, nullptr, functionSymbol, nullptr);
+    TAC* beginTac = tacCreate(TACType::BEGINFUN, nullptr, functionSymbol, nullptr);
     
     TAC* bodyCode = nullptr;
     for (size_t i = 1; i < node->getChildren().size(); i++) {
-        TAC* childCode = generateCode(node->getChildren()[i]);
+        TAC* childCode = generateTAC(node->getChildren()[i]);
         bodyCode = tacJoin(bodyCode, childCode);
     }
     
-    TAC* endTac = tacCreate(TACType::TAC_ENDFUN, nullptr, functionSymbol, nullptr);
+    TAC* endTac = tacCreate(TACType::ENDFUN, nullptr, functionSymbol, nullptr);
     
     TAC* result = tacJoin(beginTac, bodyCode);
     result = tacJoin(result, endTac);
@@ -586,11 +586,11 @@ TAC* generateReturn(ASTNode* node) {
     Symbol* valueSymbol = nullptr;
     
     if (!node->getChildren().empty()) {
-        valueCode = generateCode(node->getChildren()[0]);
+        valueCode = generateTAC(node->getChildren()[0]);
         valueSymbol = getResultSymbol(valueCode, node->getChildren()[0]);
     }
     
-    TAC* retTac = tacCreate(TACType::TAC_RET, nullptr, valueSymbol, nullptr);
+    TAC* retTac = tacCreate(TACType::RET, nullptr, valueSymbol, nullptr);
     
     return tacJoin(valueCode, retTac);
 }
@@ -598,10 +598,10 @@ TAC* generateReturn(ASTNode* node) {
 TAC* generatePrint(ASTNode* node) {
     if (node->getChildren().empty()) return nullptr;
     
-    TAC* valueCode = generateCode(node->getChildren()[0]);
+    TAC* valueCode = generateTAC(node->getChildren()[0]);
     Symbol* valueSymbol = getResultSymbol(valueCode, node->getChildren()[0]);
     
-    TAC* printTac = tacCreate(TACType::TAC_PRINT, nullptr, valueSymbol, nullptr);
+    TAC* printTac = tacCreate(TACType::PRINT, nullptr, valueSymbol, nullptr);
     
     return tacJoin(valueCode, printTac);
 }
@@ -610,7 +610,7 @@ TAC* generateRead(ASTNode* node) {
     if (node->getChildren().empty()) return nullptr;
     
     Symbol* targetSymbol = node->getChildren()[0]->getSymbol();
-    TAC* readTac = tacCreate(TACType::TAC_READ, targetSymbol, nullptr, nullptr);
+    TAC* readTac = tacCreate(TACType::READ, targetSymbol, nullptr, nullptr);
     
     return readTac;
 }
@@ -618,12 +618,12 @@ TAC* generateRead(ASTNode* node) {
 TAC* generateVectorAccess(ASTNode* node) {
     if (node->getChildren().size() < 2) return nullptr;
     
-    TAC* indexCode = generateCode(node->getChildren()[1]);
+    TAC* indexCode = generateTAC(node->getChildren()[1]);
     Symbol* vectorSymbol = node->getChildren()[0]->getSymbol();
     Symbol* indexSymbol = getResultSymbol(indexCode, node->getChildren()[1]);
     
     Symbol* temp = makeTemp();
-    TAC* vecreadTac = tacCreate(TACType::TAC_VECREAD, temp, vectorSymbol, indexSymbol);
+    TAC* vecreadTac = tacCreate(TACType::VECREAD, temp, vectorSymbol, indexSymbol);
     
     return tacJoin(indexCode, vecreadTac);
 }
@@ -636,14 +636,14 @@ TAC* generateVectorAssignment(ASTNode* node) {
     if (vectorAccessNode->getChildren().size() < 2) return nullptr;
     
     // Generate code for index and value
-    TAC* indexCode = generateCode(vectorAccessNode->getChildren()[1]);
-    TAC* valueCode = generateCode(node->getChildren()[1]);
+    TAC* indexCode = generateTAC(vectorAccessNode->getChildren()[1]);
+    TAC* valueCode = generateTAC(node->getChildren()[1]);
     
     Symbol* vectorSymbol = vectorAccessNode->getChildren()[0]->getSymbol();
     Symbol* indexSymbol = getResultSymbol(indexCode, vectorAccessNode->getChildren()[1]);
     Symbol* valueSymbol = getResultSymbol(valueCode, node->getChildren()[1]);
     
-    TAC* vecwriteTac = tacCreate(TACType::TAC_VECWRITE, vectorSymbol, indexSymbol, valueSymbol);
+    TAC* vecwriteTac = tacCreate(TACType::VECWRITE, vectorSymbol, indexSymbol, valueSymbol);
     
     TAC* result = tacJoin(indexCode, valueCode);
     result = tacJoin(result, vecwriteTac);
@@ -680,10 +680,10 @@ TAC* generateVariableDeclaration(ASTNode* node) {
         }
         
         if (varSymbol && valueNode) {
-            TAC* valueCode = generateCode(valueNode);
+            TAC* valueCode = generateTAC(valueNode);
             Symbol* valueSymbol = getResultSymbol(valueCode, valueNode);
             
-            TAC* assignTac = tacCreate(TACType::TAC_MOVE, varSymbol, valueSymbol, nullptr);
+            TAC* assignTac = tacCreate(TACType::MOVE, varSymbol, valueSymbol, nullptr);
             return tacJoin(valueCode, assignTac);
         }
     }
@@ -714,7 +714,7 @@ TAC* generateVectorDeclaration(ASTNode* node) {
     TAC* result = nullptr;
     
     // Begin vector initialization
-    TAC* beginVecTac = tacCreate(TACType::TAC_BEGINVEC, nullptr, vectorSymbol, sizeSymbol);
+    TAC* beginVecTac = tacCreate(TACType::BEGINVEC, nullptr, vectorSymbol, sizeSymbol);
     result = tacJoin(result, beginVecTac);
     
     // Initialize all positions with zero
@@ -731,12 +731,12 @@ TAC* generateVectorDeclaration(ASTNode* node) {
         ss << i;
         Symbol* indexSymbol = insertSymbol(ss.str(), 0, 1);
         
-        TAC* vecwriteTac = tacCreate(TACType::TAC_VECWRITE, vectorSymbol, indexSymbol, zeroSymbol);
+        TAC* vecwriteTac = tacCreate(TACType::VECWRITE, vectorSymbol, indexSymbol, zeroSymbol);
         result = tacJoin(result, vecwriteTac);
     }
     
     // End vector initialization
-    TAC* endVecTac = tacCreate(TACType::TAC_ENDVEC, nullptr, vectorSymbol, nullptr);
+    TAC* endVecTac = tacCreate(TACType::ENDVEC, nullptr, vectorSymbol, nullptr);
     result = tacJoin(result, endVecTac);
     
     return result;
@@ -750,12 +750,12 @@ TAC* generateVectorInitialization(ASTNode* node) {
         Symbol* vectorSymbol = node->getChildren()[0]->getSymbol();
         
         // Begin vector initialization
-        TAC* beginVecTac = tacCreate(TACType::TAC_BEGINVEC, nullptr, vectorSymbol, nullptr);
+        TAC* beginVecTac = tacCreate(TACType::BEGINVEC, nullptr, vectorSymbol, nullptr);
         result = tacJoin(result, beginVecTac);
         
         // Generate VECWRITE for each initialization value
         for (size_t i = 1; i < node->getChildren().size(); i++) {
-            TAC* valueCode = generateCode(node->getChildren()[i]);
+            TAC* valueCode = generateTAC(node->getChildren()[i]);
             Symbol* valueSymbol = getResultSymbol(valueCode, node->getChildren()[i]);
             
             // Create index symbol for position (i-1)
@@ -763,13 +763,13 @@ TAC* generateVectorInitialization(ASTNode* node) {
             ss << (i - 1);
             Symbol* indexSymbol = insertSymbol(ss.str(), 0, 1);
             
-            TAC* vecwriteTac = tacCreate(TACType::TAC_VECWRITE, vectorSymbol, indexSymbol, valueSymbol);
+            TAC* vecwriteTac = tacCreate(TACType::VECWRITE, vectorSymbol, indexSymbol, valueSymbol);
             result = tacJoin(result, valueCode);
             result = tacJoin(result, vecwriteTac);
         }
         
         // End vector initialization
-        TAC* endVecTac = tacCreate(TACType::TAC_ENDVEC, nullptr, vectorSymbol, nullptr);
+        TAC* endVecTac = tacCreate(TACType::ENDVEC, nullptr, vectorSymbol, nullptr);
         result = tacJoin(result, endVecTac);
     }
     
@@ -782,19 +782,19 @@ TAC* generateDoWhile(ASTNode* node) {
     Symbol* beginLabel = makeLabel();
     Symbol* endLabel = makeLabel();
     
-    TAC* beginLabelTac = tacCreate(TACType::TAC_LABEL, nullptr, beginLabel, nullptr);
-    TAC* bodyCode = generateCode(node->getChildren()[0]); // body comes first in do-while
-    TAC* conditionCode = generateCode(node->getChildren()[1]); // condition comes second
+    TAC* beginLabelTac = tacCreate(TACType::LABEL, nullptr, beginLabel, nullptr);
+    TAC* bodyCode = generateTAC(node->getChildren()[0]); // body comes first in do-while
+    TAC* conditionCode = generateTAC(node->getChildren()[1]); // condition comes second
     
     Symbol* conditionSymbol = getResultSymbol(conditionCode, node->getChildren()[1]);
     
     // For do-while: jump back to beginning if condition is true (non-zero)
     // We need to negate the condition for IFZ (jump if zero)
     Symbol* temp = makeTemp();
-    TAC* notTac = tacCreate(TACType::TAC_NOT, temp, conditionSymbol, nullptr);
-    TAC* ifzTac = tacCreate(TACType::TAC_IFZ, nullptr, temp, endLabel);
-    TAC* jumpTac = tacCreate(TACType::TAC_JUMP, nullptr, beginLabel, nullptr);
-    TAC* endLabelTac = tacCreate(TACType::TAC_LABEL, nullptr, endLabel, nullptr);
+    TAC* notTac = tacCreate(TACType::NOT, temp, conditionSymbol, nullptr);
+    TAC* ifzTac = tacCreate(TACType::IFZ, nullptr, temp, endLabel);
+    TAC* jumpTac = tacCreate(TACType::JUMP, nullptr, beginLabel, nullptr);
+    TAC* endLabelTac = tacCreate(TACType::LABEL, nullptr, endLabel, nullptr);
     
     TAC* result = tacJoin(beginLabelTac, bodyCode);
     result = tacJoin(result, conditionCode);
@@ -810,36 +810,36 @@ TAC* generateDoWhile(ASTNode* node) {
 // Utility functions
 std::string tacTypeToString(TACType type) {
     switch (type) {
-        case TACType::TAC_SYMBOL: return "SYMBOL";
-        case TACType::TAC_MOVE: return "MOVE";
-        case TACType::TAC_ADD: return "ADD";
-        case TACType::TAC_SUB: return "SUB";
-        case TACType::TAC_MUL: return "MUL";
-        case TACType::TAC_DIV: return "DIV";
-        case TACType::TAC_MOD: return "MOD";
-        case TACType::TAC_AND: return "AND";
-        case TACType::TAC_OR: return "OR";
-        case TACType::TAC_NOT: return "NOT";
-        case TACType::TAC_LT: return "LT";
-        case TACType::TAC_GT: return "GT";
-        case TACType::TAC_LE: return "LE";
-        case TACType::TAC_GE: return "GE";
-        case TACType::TAC_EQ: return "EQ";
-        case TACType::TAC_NE: return "NE";
-        case TACType::TAC_LABEL: return "LABEL";
-        case TACType::TAC_BEGINFUN: return "BEGINFUN";
-        case TACType::TAC_ENDFUN: return "ENDFUN";
-        case TACType::TAC_IFZ: return "IFZ";
-        case TACType::TAC_JUMP: return "JUMP";
-        case TACType::TAC_CALL: return "CALL";
-        case TACType::TAC_ARG: return "ARG";
-        case TACType::TAC_RET: return "RET";
-        case TACType::TAC_PRINT: return "PRINT";
-        case TACType::TAC_READ: return "READ";
-        case TACType::TAC_VECWRITE: return "VECWRITE";
-        case TACType::TAC_VECREAD: return "VECREAD";
-        case TACType::TAC_BEGINVEC: return "BEGINVEC";
-        case TACType::TAC_ENDVEC: return "ENDVEC";
+        case TACType::SYMBOL: return "SYMBOL";
+        case TACType::MOVE: return "MOVE";
+        case TACType::ADD: return "ADD";
+        case TACType::SUB: return "SUB";
+        case TACType::MUL: return "MUL";
+        case TACType::DIV: return "DIV";
+        case TACType::MOD: return "MOD";
+        case TACType::AND: return "AND";
+        case TACType::OR: return "OR";
+        case TACType::NOT: return "NOT";
+        case TACType::LT: return "LT";
+        case TACType::GT: return "GT";
+        case TACType::LE: return "LE";
+        case TACType::GE: return "GE";
+        case TACType::EQ: return "EQ";
+        case TACType::NE: return "NE";
+        case TACType::LABEL: return "LABEL";
+        case TACType::BEGINFUN: return "BEGINFUN";
+        case TACType::ENDFUN: return "ENDFUN";
+        case TACType::IFZ: return "IFZ";
+        case TACType::JUMP: return "JUMP";
+        case TACType::CALL: return "CALL";
+        case TACType::ARG: return "ARG";
+        case TACType::RET: return "RET";
+        case TACType::PRINT: return "PRINT";
+        case TACType::READ: return "READ";
+        case TACType::VECWRITE: return "VECWRITE";
+        case TACType::VECREAD: return "VECREAD";
+        case TACType::BEGINVEC: return "BEGINVEC";
+        case TACType::ENDVEC: return "ENDVEC";
         default: return "UNKNOWN";
     }
 }

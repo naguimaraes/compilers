@@ -63,9 +63,9 @@ int main(int argc, char **argv){
 
     fprintf(stderr, "\n====================  TAC Generation ====================\n");
     initTAC();
-    TAC* tacCode = generateCode(root);
+    TAC* tacCode = generateTAC(root);
     if (tacCode) {
-        tacPrint(tacCode);
+        printTAC(tacCode);
         fprintf(stderr, "TAC generation completed successfully.\n");
     } else {
         fprintf(stderr, "TAC generation failed.\n");

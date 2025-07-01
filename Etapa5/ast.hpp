@@ -10,44 +10,96 @@
 // Forward declaration
 class Symbol;
 
+// AST node types for different language constructs
 enum class ASTNodeType {
-    UNKNOWN,
-    SYMBOL,
+    UNKNOWN,            // Unknown/uninitialized node type
+    SYMBOL,             // Symbol reference
     
-    DECLARATION_LIST,
-    VARIABLE_DECLARATION,
-    VECTOR_DECLARATION, VECTOR_INITIALIZATION, VECTOR_ACCESS,
-    EXPRESSION_LIST, ARGUMENTS_LIST, FUNCTION_DECLARATION, PARAMETERS_LIST, FUNCTION_CALL, FORMAL_PARAMETERS,
-    COMMAND, COMMAND_LIST,
-    ASSIGNMENT,
+    // Declaration types
+    DECLARATION_LIST,       // List of declarations
+    VARIABLE_DECLARATION,   // Variable declaration: type var = value
+    VECTOR_DECLARATION,     // Vector declaration: type vec[size]
+    VECTOR_INITIALIZATION,  // Vector initialization: type vec[size] = {values}
+    VECTOR_ACCESS,          // Vector access: vec[index]
     
-    ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO,
-    AND, OR, NOT,
-    LESS_THAN, GREATER_THAN, LESS_EQUAL, GREATER_EQUAL, EQUAL, DIFFERENT,
+    // Function-related types
+    EXPRESSION_LIST,        // List of expressions
+    ARGUMENTS_LIST,         // Function call arguments
+    FUNCTION_DECLARATION,   // Function declaration
+    PARAMETERS_LIST,        // Function parameter list
+    FUNCTION_CALL,          // Function call
+    FORMAL_PARAMETERS,      // Formal parameters in function definition
     
-    BYTE, INT, REAL, CHAR, LITERAL,
-    IF, ELSE, WHILE_DO, DO_WHILE,
-    READ, PRINT, RETURN,
+    // Command types
+    COMMAND,            // Single command
+    COMMAND_LIST,       // List of commands
+    ASSIGNMENT,         // Assignment operation: var = expr
+    
+    // Arithmetic operations
+    ADD,                // Addition: a + b
+    SUBTRACT,           // Subtraction: a - b
+    MULTIPLY,           // Multiplication: a * b
+    DIVIDE,             // Division: a / b
+    MODULO,             // Modulo: a % b
+    
+    // Logical operations
+    AND,                // Logical AND: a && b
+    OR,                 // Logical OR: a || b
+    NOT,                // Logical NOT: !a
+    
+    // Comparison operations
+    LESS_THAN,          // Less than: a < b
+    GREATER_THAN,       // Greater than: a > b
+    LESS_EQUAL,         // Less or equal: a <= b
+    GREATER_EQUAL,      // Greater or equal: a >= b
+    EQUAL,              // Equal: a == b
+    DIFFERENT,          // Different: a != b
+    
+    // Literal types
+    BYTE,               // Byte literal
+    INT,                // Integer literal
+    REAL,               // Real number literal
+    CHAR,               // Character literal
+    LITERAL,            // General literal
+    
+    // Control flow
+    IF,                 // If statement
+    ELSE,               // Else clause
+    WHILE_DO,           // While loop
+    DO_WHILE,           // Do-while loop
+    
+    // I/O operations
+    READ,               // Read operation
+    PRINT,              // Print operation
+    RETURN,             // Return statement
 };
 
 extern std::vector<std::string> ASTTypeNames;
 
+// AST node structure - represents a node in the abstract syntax tree
 class ASTNode {
 private:
-    ASTNodeType type;
-    std::vector<ASTNode*> children;
-    Symbol* symbol;
-    int lineNumber; // Add line number to AST nodes
+    ASTNodeType type;               // Node type from ASTNodeType enum above
+    std::vector<ASTNode*> children; // Child nodes
+    Symbol* symbol;                 // Associated symbol (if any)
+    int lineNumber;                 // Line number in source code
 
 public:
     ASTNode(ASTNodeType type = ASTNodeType::UNKNOWN, Symbol* symbol = nullptr, std::vector<ASTNode*> children = {}, int lineNumber = 0);
+    
+    // Tree manipulation
     void addChild(ASTNode* child);
+    
+    // Getters
     std::vector<ASTNode*> getChildren();
     Symbol* getSymbol();
     ASTNodeType getType();
-    int getLineNumber() const; // Getter for line number
-    void setLineNumber(int line); // Setter for line number
+    int getLineNumber() const;
+    
+    // Setters
+    void setLineNumber(int line);
 };
 
-void printAST(int level, ASTNode* node);
-void decompileAST(std::ofstream& outFile, ASTNode* node, int depth);
+// Public interface functions - AST manipulation and output
+void printAST(int level, ASTNode* node);                               // Print AST structure to stderr
+void decompileAST(std::ofstream& outFile, ASTNode* node, int depth);   // Decompile AST back to source code
