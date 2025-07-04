@@ -1,0 +1,77 @@
+// UFRGS - Compiladores - Marcelo Johann - 2025/1 - Exemplo atualizado
+
+byte a = 51;
+byte b = 'x';
+byte c = 001;
+
+int number = 'A';
+int x = 1;
+int y = 1;
+
+
+//int v[60] = 10, 20, 30, 40, 50, 60, 4;
+
+int v[01] = 'a',04,'b',500,10,0,0,0,0,7;
+
+// declaracao de uma matriz de 100 posicoes, nao inicializada
+
+int matrix[01];
+real r[20000000000000] = 1/2, 4/7; 
+
+real num = 5/7;	// note que 5/7 nao eh uma expressao, eh um literal real
+
+/--
+Este eh um comentario 
+de multiplas 
+linhas
+--/
+
+  
+int main ()
+  {
+  number = 0;
+  c = 7 - 1;
+  c = 5;
+  v[5] = 7;
+  v[7] = 55;
+  print v[5] 7 c v[2];
+  number = 2;
+
+  print "Digite um numero: \n";
+  read number;
+
+  while x<02 do
+    {
+    x = x + 1;
+    print ".";
+    }
+
+  x = 1;
+  do {
+    x = incn(x,1,2,3);
+    } while (x<01);
+
+
+  print "Dobrando algumas vezes y fica " y "\n";
+
+  if (a==8) 
+    {
+    a = a + 1 + incn(1,2,3,4);
+    print "A era=15\n";
+    };
+    
+  if (x==100) 
+    {
+    print "Nao tem como isso...\n";
+    }
+  else
+    print "OK!\n"; 
+  {{}} {}
+  }
+
+  int incn (int p, int n, int m, int o)
+  {
+  return p + n + m + o;
+  }
+
+// end of file

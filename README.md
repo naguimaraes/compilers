@@ -38,15 +38,14 @@ The stages are as follows:
 
 ### [Stage 5 (Etapa5)](./Etapa5/): Intermediate Code Generation ✅
 
-- Implementation of Three Address Code (TAC) generation
-- Translation of AST nodes to intermediate representation
-- Support for arithmetic, logical, and comparison operations
-- Control flow code generation (if, while, do-while statements)
-- Function call and declaration code generation
-- Vector operations and I/O operations in TAC format
+- Translation of AST nodes to intermediate Three Address Code (TAC) representation
 - Automatic generation of temporary variables and labels
-- Foundation for code optimization and target code generation
 
+### [Stage 6 (Etapa6)](./Etapa6/): Target Code Generation ✅
+
+- Translation of TAC to x86 assembly
+- Stack-based memory management
+- Integration with libc for standard functions
 
 ## 2025++1 Language Specification
 

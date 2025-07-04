@@ -1,0 +1,11 @@
+int a = 2;
+int b = 3;
+int c = 4;
+
+int main(){
+  print "Hello, World!\n";
+  print "soma: " a + b + c "\n";
+  print "subtracao: " c - b - a "\n";
+  
+  return 0;
+}

@@ -1,0 +1,45 @@
+======== Symbol Table ========
+Lex: ".", Type: LIT_STRING
+Lex: "A era=15\n", Type: LIT_STRING
+Lex: "Digite um numero: \n", Type: LIT_STRING
+Lex: "Dobrando algumas vezes y fica ", Type: LIT_STRING
+Lex: "Nao tem como isso...\n", Type: LIT_STRING
+Lex: "OK!\n", Type: LIT_STRING
+Lex: "\n", Type: LIT_STRING
+Lex: 'A', Type: LIT_CHAR
+Lex: 'a', Type: LIT_CHAR
+Lex: 'b', Type: LIT_CHAR
+Lex: 'x', Type: LIT_CHAR
+Lex: 0, Type: LIT_INT
+Lex: 1, Type: LIT_INT
+Lex: 1/2, Type: LIT_REAL
+Lex: 10, Type: LIT_INT
+Lex: 100, Type: LIT_INT
+Lex: 15, Type: LIT_INT
+Lex: 2, Type: LIT_INT
+Lex: 20, Type: LIT_INT
+Lex: 3, Type: LIT_INT
+Lex: 4, Type: LIT_INT
+Lex: 4/7, Type: LIT_REAL
+Lex: 40, Type: LIT_INT
+Lex: 5, Type: LIT_INT
+Lex: 5/7, Type: LIT_REAL
+Lex: 55, Type: LIT_INT
+Lex: 7, Type: LIT_INT
+Lex: 8/7, Type: LIT_REAL
+Lex: a, Type: TK_IDENTIFIER
+Lex: b, Type: TK_IDENTIFIER
+Lex: c, Type: TK_IDENTIFIER
+Lex: incn, Type: TK_IDENTIFIER
+Lex: m, Type: TK_IDENTIFIER
+Lex: main, Type: TK_IDENTIFIER
+Lex: matrix, Type: TK_IDENTIFIER
+Lex: n, Type: TK_IDENTIFIER
+Lex: num, Type: TK_IDENTIFIER
+Lex: number, Type: TK_IDENTIFIER
+Lex: o, Type: TK_IDENTIFIER
+Lex: p, Type: TK_IDENTIFIER
+Lex: r, Type: TK_IDENTIFIER
+Lex: v, Type: TK_IDENTIFIER
+Lex: x, Type: TK_IDENTIFIER
+Lex: y, Type: TK_IDENTIFIER
