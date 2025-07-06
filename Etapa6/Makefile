@@ -38,7 +38,7 @@ assemble: $(PROJECT)
 	@./$(PROJECT) $(PROJECT).2025++1 output/$(PROJECT)_symbol_table.txt output/$(PROJECT)_AST.txt output/$(PROJECT)_decompiled.txt output/$(PROJECT)_TAC.txt output/$(PROJECT).s
 	@echo "Compilation finished."
 	@echo "\nGenerating binary code:"
-	gcc -m32 -no-pie -Wl,-z,noexecstack output/$(PROJECT).s -o output/$(PROJECT).out
+	gcc -no-pie output/$(PROJECT).s -o output/$(PROJECT).out
 	@echo "- Binary code saved at output/$(PROJECT).out"
 
 run: assemble

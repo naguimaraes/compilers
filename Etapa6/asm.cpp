@@ -1,5 +1,5 @@
 // Federal University of Rio Grande do Sul - Institute of Informatics - Compilers 2025/1
-// Assembly (ASM) generator source code made by Nathan Alonso Guimarães (00334437)
+// Assembly (ASM) source code made by Nathan Alonso Guimarães (00334437)
 
 #include "asm.hpp"
 #include "tac.hpp"
@@ -18,14 +18,14 @@ std::ofstream* outFile = nullptr;                                    // Output f
 std::unordered_map<std::string, std::string> varLocations;          // Variable to memory location mapping
 std::unordered_map<std::string, int> vectorSizes;                   // Vector name to size mapping
 std::unordered_map<std::string, dataType> varTypes;                 // Variable name to type mapping
-std::vector<std::string> stringLiterals;                            // String literals storage
+std::vector<std::string> stringLiterals;                            // String literals storage                            // String literals storage
 int stackOffset = 0;                                                // Current stack offset for local variables
 int labelCounter = 0;                                               // Counter for generating unique labels
 int stringCounter = 0;                                              // Counter for string literals
-std::string currentRegister = "%eax";                               // Currently used register (usually %eax)
+std::string currentRegister = "%rax";                               // Currently used register (usually %rax)
 std::string currentFunction = "";                                   // Current function being processed
 std::unordered_map<std::string, int> functionParamCount;            // Function name to parameter count mapping
-int currentParamOffset = 8;                                         // Current parameter offset (starts at 8(%ebp))
+int currentParamOffset = 16;                                        // Current parameter offset (starts at 16(%rbp))
 
 // Utility functions
 std::string getOperandLocation(class Symbol* symbol);
@@ -101,7 +101,7 @@ std::string allocateVariable(const std::string& name, int size) {
     }
     
     stackOffset += size;
-    std::string location = "-" + std::to_string(stackOffset) + "(%ebp)";
+    std::string location = "-" + std::to_string(stackOffset) + "(%rbp)";
     varLocations[name] = location;
     return location;
 }
@@ -112,14 +112,14 @@ std::string allocateParameter(const std::string& name) {
         return it->second;
     }
     
-    std::string location = std::to_string(currentParamOffset) + "(%ebp)";
+    std::string location = std::to_string(currentParamOffset) + "(%rbp)";
     varLocations[name] = location;
-    currentParamOffset += 4; // Each parameter is 4 bytes
+    currentParamOffset += 8; // Each parameter is 8 bytes in 64-bit
     return location;
 }
 
 std::string allocateVector(const std::string& name, int elements) {
-    return allocateVariable(name, elements * 4);  // 4 bytes per element
+    return allocateVariable(name, elements * 8);  // 8 bytes per element in 64-bit
 }
 
 // Helper function to evaluate real expressions like "7/1"
@@ -202,10 +202,10 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     stackOffset = 0;
     labelCounter = 0;
     stringCounter = 0;
-    currentRegister = "%eax";
+    currentRegister = "%rax";
     currentFunction = "";
     functionParamCount.clear();
-    currentParamOffset = 8;
+    currentParamOffset = 16;
     
     // Check if TAC exists
     if (!tacHead) {
@@ -305,7 +305,7 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     for (const auto& vec : globalVectors) {
         std::string vecName = vec.first;
         int size = vec.second;
-        emitInstruction(vecName + ": .space " + std::to_string(size * 4)); // 4 bytes per element
+        emitInstruction(vecName + ": .space " + std::to_string(size * 4)); // 4 bytes per element for int values
         // Update varLocations to point to global vector
         varLocations[vecName] = vecName;
     }
@@ -392,8 +392,8 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     // Generate main function
     emitLabel("main:");
     emitComment("Function main prologue");
-    emitInstruction("pushl %ebp");
-    emitInstruction("movl %esp, %ebp");
+    emitInstruction("pushq %rbp");
+    emitInstruction("movq %rsp, %rbp");
     
     // Allocate space for temporary variables only (vectors are now global)
     // Skip INIT variables and vectors since they're now global
@@ -412,7 +412,7 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     
     // Subtract stack space for local variables (vectors and temporary variables)
     if (stackOffset > 0) {
-        emitInstruction("subl $" + std::to_string(stackOffset) + ", %esp");
+        emitInstruction("subq $" + std::to_string(stackOffset) + ", %rsp");
     }
     
     // Process global initializations (now inside main)
@@ -427,8 +427,8 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     
     // Main function epilogue
     emitComment("Function main epilogue");
-    emitInstruction("movl %ebp, %esp");
-    emitInstruction("popl %ebp");
+    emitInstruction("movq %rbp, %rsp");
+    emitInstruction("popq %rbp");
     emitInstruction("ret");
     (*outFile) << std::endl;
     
@@ -475,45 +475,46 @@ void processInstruction(TAC* current) {
                 if (current->getOp1() && isRealVariable(current->getOp1()->getLexeme())) {
                     format = "$real_format";
                     // For real variables, we need to push as float
+                    // In 64-bit System V ABI, floating point goes in %xmm0
                     emitInstruction("flds " + value);  // Load float onto FPU stack
-                    emitInstruction("subl $8, %esp");  // Make space for double on stack
-                    emitInstruction("fstpl (%esp)");   // Store as double on stack
-                    emitInstruction("pushl " + format);
+                    emitInstruction("fstps -8(%rbp)"); // Store as float on stack temporarily
+                    emitInstruction("movss -8(%rbp), %xmm0"); // Move to SSE register
+                    emitInstruction("cvtss2sd %xmm0, %xmm0"); // Convert single to double
+                    emitInstruction("movq " + format + ", %rdi");
                     emitInstruction("call printf");
-                    emitInstruction("addl $12, %esp"); // Clean up 8 bytes (double) + 4 bytes (format)
                 } else {
                     // Integer or string printing
                     if (value.front() == '"' && value.back() == '"') {
                         format = "$string_format";
                         value = getStringLabel(value);
                     }
+                    // In 64-bit System V ABI, first argument goes in %rdi, second in %rsi
                     if (value[0] == '$') {
-                        emitInstruction("pushl " + value);
+                        emitInstruction("movq " + value + ", %rsi");
                     } else {
-                        emitInstruction("pushl " + value);
+                        emitInstruction("movq " + value + ", %rsi");
                     }
-                    emitInstruction("pushl " + format);
+                    emitInstruction("movq " + format + ", %rdi");
                     emitInstruction("call printf");
-                    emitInstruction("addl $8, %esp");
                 }
                 break;
             }
             case TACType::BEGINFUN: {
                 std::string funcName = current->getOp1()->getLexeme();
                 currentFunction = funcName;
-                currentParamOffset = 8; // Reset parameter offset
+                currentParamOffset = 16; // Reset parameter offset (16 in 64-bit due to return address + %rbp)
                 emitLabel(funcName + ":");
                 emitComment("Function " + funcName + " prologue");
-                emitInstruction("pushl %ebp");
-                emitInstruction("movl %esp, %ebp");
+                emitInstruction("pushq %rbp");
+                emitInstruction("movq %rsp, %rbp");
                 stackOffset = 0; // Reset local variable offset
                 break;
             }
             case TACType::ENDFUN: {
                 std::string funcName = current->getOp1()->getLexeme();
                 emitComment("Function " + funcName + " epilogue");
-                emitInstruction("movl %ebp, %esp");
-                emitInstruction("popl %ebp");
+                emitInstruction("movq %rbp, %rsp");
+                emitInstruction("popq %rbp");
                 emitInstruction("ret");
                 (*outFile) << std::endl;
                 break;
@@ -523,9 +524,9 @@ void processInstruction(TAC* current) {
                     std::string retVal = getOperandValue(current->getOp1());
                     emitComment("Return " + retVal);
                     if (retVal[0] == '$') {
-                        emitInstruction("movl " + retVal + ", %eax");
+                        emitInstruction("movq " + retVal + ", %rax");
                     } else {
-                        emitInstruction("movl " + retVal + ", %eax");
+                        emitInstruction("movq " + retVal + ", %rax");
                     }
                 }
                 break;
@@ -550,9 +551,9 @@ void processInstruction(TAC* current) {
                     } else {
                         // Convert integer to float
                         if (op1[0] == '$') {
-                            emitInstruction("movl " + op1 + ", %eax");
-                            emitInstruction("movl %eax, -4(%ebp)");
-                            emitInstruction("filds -4(%ebp)");
+                            emitInstruction("movq " + op1 + ", %rax");
+                            emitInstruction("movq %rax, -8(%rbp)");
+                            emitInstruction("filds -8(%rbp)");
                         } else {
                             emitInstruction("filds " + op1);
                         }
@@ -564,9 +565,9 @@ void processInstruction(TAC* current) {
                     } else {
                         // Convert integer to float
                         if (op2[0] == '$') {
-                            emitInstruction("movl " + op2 + ", %eax");
-                            emitInstruction("movl %eax, -4(%ebp)");
-                            emitInstruction("fiadds -4(%ebp)");
+                            emitInstruction("movq " + op2 + ", %rax");
+                            emitInstruction("movq %rax, -8(%rbp)");
+                            emitInstruction("fiadds -8(%rbp)");
                         } else {
                             emitInstruction("fiadds " + op2);
                         }
@@ -614,9 +615,9 @@ void processInstruction(TAC* current) {
                     } else {
                         // Convert integer to float
                         if (op1[0] == '$') {
-                            emitInstruction("movl " + op1 + ", %eax");
-                            emitInstruction("movl %eax, -4(%ebp)");
-                            emitInstruction("filds -4(%ebp)");
+                            emitInstruction("movq " + op1 + ", %rax");
+                            emitInstruction("movq %rax, -8(%rbp)");
+                            emitInstruction("filds -8(%rbp)");
                         } else {
                             emitInstruction("filds " + op1);
                         }
@@ -628,9 +629,9 @@ void processInstruction(TAC* current) {
                     } else {
                         // Convert integer to float
                         if (op2[0] == '$') {
-                            emitInstruction("movl " + op2 + ", %eax");
-                            emitInstruction("movl %eax, -4(%ebp)");
-                            emitInstruction("fisubs -4(%ebp)");
+                            emitInstruction("movq " + op2 + ", %rax");
+                            emitInstruction("movq %rax, -8(%rbp)");
+                            emitInstruction("fisubs -8(%rbp)");
                         } else {
                             emitInstruction("fisubs " + op2);
                         }
@@ -689,7 +690,7 @@ void processInstruction(TAC* current) {
                 } else {
                     emitInstruction("movl " + op1 + ", %eax");
                 }
-                emitInstruction("cdq");
+                emitInstruction("cdq"); // Sign extend %eax to %edx:%eax
                 if (op2[0] == '$') {
                     emitInstruction("movl " + op2 + ", %ebx");
                 } else {
@@ -801,44 +802,37 @@ void processInstruction(TAC* current) {
                 emitComment("Call function " + funcName);
                 emitInstruction("call " + funcName);
                 
-                // Clean up arguments from stack (assuming 3 arguments for now)
-                // TODO: Track argument count properly
-                if (funcName == "result") {
-                    emitInstruction("addl $12, %esp"); // 3 args × 4 bytes = 12
-                }
+                // In 64-bit System V ABI, no need to clean up arguments from stack
+                // since they are passed in registers
                 
                 if (!result.empty()) {
                     std::string resultLoc = allocateVariable(result);
-                    emitInstruction("movl %eax, " + resultLoc);
+                    emitInstruction("movq %rax, " + resultLoc);
                 }
                 break;
             }
             case TACType::ARG: {
-                std::string arg = getOperandValue(current->getOp1());
-                emitComment("Push argument: " + arg);
-                if (arg[0] == '$') {
-                    emitInstruction("pushl " + arg);
-                } else {
-                    emitInstruction("pushl " + arg);
-                }
+                // In 64-bit System V ABI, arguments are passed in registers
+                // (%rdi, %rsi, %rdx, %rcx, %r8, %r9), so we don't push to stack
+                // This case is handled in the function call itself
                 break;
             }
             case TACType::READ: {
                 std::string var = current->getRes()->getLexeme();
                 std::string varLoc = getOperandLocation(current->getRes());
                 emitComment("Read into " + var);
+                // In 64-bit System V ABI, first argument goes in %rdi, second in %rsi
                 // For global variables, we need the address (add $)
-                // For stack variables, we already have the address format
-                if (varLoc.find("(%ebp)") == std::string::npos) {
-                    // Global variable - need address
-                    emitInstruction("pushl $" + varLoc);
+                // For stack variables, we need to use lea to get address
+                if (varLoc.find("(%rbp)") == std::string::npos) {
+                    // Global variable - use address directly
+                    emitInstruction("movq $" + varLoc + ", %rsi");
                 } else {
-                    // Stack variable - already has address format
-                    emitInstruction("pushl " + varLoc);
+                    // Stack variable - use lea to get effective address
+                    emitInstruction("leaq " + varLoc + ", %rsi");
                 }
-                emitInstruction("pushl $scanf_int");
+                emitInstruction("movq $scanf_int, %rdi");
                 emitInstruction("call scanf");
-                emitInstruction("addl $8, %esp");
                 break;
             }
             case TACType::VECWRITE: {
@@ -853,7 +847,7 @@ void processInstruction(TAC* current) {
                 } else {
                     emitInstruction("movl " + index + ", %eax");
                 }
-                emitInstruction("imull $4, %eax");
+                emitInstruction("imull $4, %eax"); // 4 bytes per element for int values
                 if (value[0] == '$') {
                     emitInstruction("movl " + value + ", %ebx");
                 } else {
@@ -861,15 +855,15 @@ void processInstruction(TAC* current) {
                 }
                 
                 // For global vectors, use direct addressing
-                if (vecLoc.find("(%ebp)") == std::string::npos) {
+                if (vecLoc.find("(%rbp)") == std::string::npos) {
                     // Global vector - use direct addressing with index
-                    emitInstruction("movl %ebx, " + vecLoc + "(,%eax)");
+                    emitInstruction("movl %ebx, " + vecLoc + "(,%rax)");
                 } else {
                     // Stack vector (shouldn't happen anymore, but keep for compatibility)
                     size_t parenPos = vecLoc.find('(');
                     std::string offset = vecLoc.substr(0, parenPos);
                     std::string reg = vecLoc.substr(parenPos + 1, vecLoc.length() - parenPos - 2);
-                    emitInstruction("movl %ebx, " + offset + "(" + reg + ",%eax)");
+                    emitInstruction("movl %ebx, " + offset + "(" + reg + ",%rax)");
                 }
                 break;
             }
@@ -886,12 +880,12 @@ void processInstruction(TAC* current) {
                 } else {
                     emitInstruction("movl " + index + ", %eax");
                 }
-                emitInstruction("imull $4, %eax");
+                emitInstruction("imull $4, %eax"); // 4 bytes per element for int values
                 
                 // For global vectors, use direct addressing
-                if (vecLoc.find("(%ebp)") == std::string::npos) {
+                if (vecLoc.find("(%rbp)") == std::string::npos) {
                     // Global vector - use direct addressing with index
-                    emitInstruction("movl " + vecLoc + "(,%eax), %ebx");
+                    emitInstruction("movl " + vecLoc + "(,%rax), %ebx");
                 } else {
                     // Stack vector (shouldn't happen anymore, but keep for compatibility)
                     size_t parenPos = vecLoc.find('(');
