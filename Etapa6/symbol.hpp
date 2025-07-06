@@ -58,7 +58,15 @@ public:
 
 // Public interface functions - symbol table management
 Symbol *insertSymbol(string lex, int type, int lineNumber = 1);    // Insert symbol into symbol table
+Symbol *getSymbol(string lex);                                     // Get symbol from symbol table
 void printSymbolTable();                                           // Print entire symbol table to stderr
 void printSymbolTableToFile(const string& filename);               // Print entire symbol table to file
 string invertNumberInt(string number);                             // Convert integer string format
 string invertNumberReal(string number);                            // Convert real number string format
+string removeZeros(string number);                                 // Remove leading zeros from a number string
+
+/*
+    The function to remove zeros on the left from the number has been removed
+    from invertNumberInt so that the decompiled code is exactly the same as the original,
+    but the zeros are still removed when moving on to TAC generation.
+*/

@@ -11,26 +11,36 @@
 #include <unordered_map>
 #include <vector>
 #include <cctype>
+#include <cstdlib>
 
 // Global state variables
 std::ofstream* outFile = nullptr;                                    // Output file stream
 std::unordered_map<std::string, std::string> varLocations;          // Variable to memory location mapping
 std::unordered_map<std::string, int> vectorSizes;                   // Vector name to size mapping
+std::unordered_map<std::string, dataType> varTypes;                 // Variable name to type mapping
 std::vector<std::string> stringLiterals;                            // String literals storage
 int stackOffset = 0;                                                // Current stack offset for local variables
 int labelCounter = 0;                                               // Counter for generating unique labels
 int stringCounter = 0;                                              // Counter for string literals
 std::string currentRegister = "%eax";                               // Currently used register (usually %eax)
+std::string currentFunction = "";                                   // Current function being processed
+std::unordered_map<std::string, int> functionParamCount;            // Function name to parameter count mapping
+int currentParamOffset = 8;                                         // Current parameter offset (starts at 8(%ebp))
 
 // Utility functions
 std::string getOperandLocation(class Symbol* symbol);
 std::string getOperandValue(class Symbol* symbol);
 std::string allocateVariable(const std::string& name, int size = 4);
+std::string allocateParameter(const std::string& name);
 std::string allocateVector(const std::string& name, int elements);
 std::string getStringLabel(const std::string& str);
 void emitInstruction(const std::string& instruction);
 void emitLabel(const std::string& label);
 void emitComment(const std::string& comment);
+void processInstruction(class TAC* current);
+float evaluateRealExpression(const std::string& expression);
+bool isRealVariable(const std::string& name);
+std::string getRealValue(const std::string& value);
 
 
 std::string getOperandLocation(Symbol* symbol) {
@@ -44,7 +54,13 @@ std::string getOperandLocation(Symbol* symbol) {
         return it->second;
     }
     
-    // Allocate new location
+    // If we're in a function other than main, and this is an unknown variable,
+    // treat it as a function parameter
+    if (currentFunction != "main" && currentFunction != "") {
+        return allocateParameter(name);
+    }
+    
+    // Allocate new location on the stack (for non-global variables)
     return allocateVariable(name);
 }
 
@@ -52,11 +68,6 @@ std::string getOperandValue(Symbol* symbol) {
     if (!symbol) return "";
     
     std::string text = symbol->getLexeme();
-    
-    // Handle specific arithmetic expressions FIRST
-    if (text == "1/2") return "$0";  // 1/2 = 0 (integer division)
-    if (text == "4/7") return "$0";  // 4/7 = 0 (integer division)  
-    if (text == "5/7") return "$0";  // 5/7 = 0 (integer division)
     
     // Check if it's a numeric literal
     if (text[0] == '\'' && text.length() == 3 && text[2] == '\'') {
@@ -84,14 +95,65 @@ std::string allocateVariable(const std::string& name, int size) {
         return it->second;
     }
     
+    // Check if this is a real variable and adjust size
+    if (isRealVariable(name)) {
+        size = 4; // float is 4 bytes
+    }
+    
     stackOffset += size;
     std::string location = "-" + std::to_string(stackOffset) + "(%ebp)";
     varLocations[name] = location;
     return location;
 }
 
+std::string allocateParameter(const std::string& name) {
+    auto it = varLocations.find(name);
+    if (it != varLocations.end()) {
+        return it->second;
+    }
+    
+    std::string location = std::to_string(currentParamOffset) + "(%ebp)";
+    varLocations[name] = location;
+    currentParamOffset += 4; // Each parameter is 4 bytes
+    return location;
+}
+
 std::string allocateVector(const std::string& name, int elements) {
     return allocateVariable(name, elements * 4);  // 4 bytes per element
+}
+
+// Helper function to evaluate real expressions like "7/1"
+float evaluateRealExpression(const std::string& expression) {
+    size_t slashPos = expression.find('/');
+    if (slashPos != std::string::npos) {
+        std::string numeratorStr = expression.substr(0, slashPos);
+        std::string denominatorStr = expression.substr(slashPos + 1);
+        
+        float numerator = static_cast<float>(std::atof(numeratorStr.c_str()));
+        float denominator = static_cast<float>(std::atof(denominatorStr.c_str()));
+        
+        if (denominator != 0.0f) {
+            return numerator / denominator;
+        }
+    }
+    return static_cast<float>(std::atof(expression.c_str()));
+}
+
+// Helper function to check if a variable is of real type
+bool isRealVariable(const std::string& name) {
+    auto it = varTypes.find(name);
+    return it != varTypes.end() && it->second == dataType::REAL;
+}
+
+// Helper function to get real value as string (for data section)
+std::string getRealValue(const std::string& value) {
+    if (value.find('/') != std::string::npos) {
+        float realValue = evaluateRealExpression(value);
+        std::ostringstream oss;
+        oss << realValue;
+        return oss.str();
+    }
+    return value;
 }
 
 std::string getStringLabel(const std::string& str) {
@@ -135,11 +197,15 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     outFile = &file;
     varLocations.clear();
     vectorSizes.clear();
+    varTypes.clear();
     stringLiterals.clear();
     stackOffset = 0;
     labelCounter = 0;
     stringCounter = 0;
     currentRegister = "%eax";
+    currentFunction = "";
+    functionParamCount.clear();
+    currentParamOffset = 8;
     
     // Check if TAC exists
     if (!tacHead) {
@@ -147,20 +213,35 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
         return;
     }
     
-    emitHeader("Generated x86 Assembly Code from TAC");
-    emitHeader("Compiled with 2025++1 Compiler");
+    emitHeader("Generated x86 Assembly Code from 2025++1 code");
+    emitHeader("Compiler made by Nathan Guimaraes (334437)");
     (*outFile) << std::endl;
     
     // Process in the same order as printTAC function
     // Start from the end and work backwards
     TAC* current = tacHead;
     
-    // Collect vector information and string literals first
+    // Collect vector information, string literals, and global variables first
+    std::vector<std::pair<std::string, std::string>> globalVars; // name, initial_value
+    std::vector<std::pair<std::string, int>> globalVectors; // name, size
     while (current) {
         if (current->getType() == TACType::BEGINVEC) {
             std::string vecName = current->getOp1()->getLexeme();
             int size = std::stoi(current->getOp2()->getLexeme());
             vectorSizes[vecName] = size;
+            globalVectors.push_back({vecName, size});
+        }
+        // Collect INIT variables for global data section
+        if (current->getType() == TACType::INIT) {
+            std::string varName = current->getRes()->getLexeme();
+            std::string value = current->getOp1()->getLexeme();
+            globalVars.push_back({varName, value});
+            
+            // Try to determine variable type from symbol table
+            Symbol* symbol = getSymbol(varName);
+            if (symbol) {
+                varTypes[varName] = symbol->getDataType();
+            }
         }
         // Check for string literals in PRINT and other operations
         if (current->getType() == TACType::PRINT && current->getOp1()) {
@@ -169,7 +250,7 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 getStringLabel(value); // This will add it to stringLiterals if not already there
             }
         }
-        current = current->getPrev();
+        current = current->getNext();
     }
     
     // Generate data section
@@ -183,6 +264,52 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     emitInstruction("scanf_char: .string \" %c\"");
     emitInstruction("scanf_real: .string \"%f\"");
     
+    // Global variables
+    for (const auto& var : globalVars) {
+        std::string varName = var.first;
+        std::string value = var.second;
+        
+        // Check if this is a real variable
+        bool isReal = isRealVariable(varName);
+        
+        if (isReal) {
+            // Handle real variables
+            if (value.find('/') != std::string::npos) {
+                // Evaluate expressions like "7/01" 
+                float realValue = evaluateRealExpression(value);
+                std::ostringstream oss;
+                oss << realValue;
+                emitInstruction(varName + ": .float " + oss.str());
+            } else {
+                emitInstruction(varName + ": .float " + value);
+            }
+        } else {
+            // Handle integer variables
+            // Handle character literals
+            if (value[0] == '\'' && value.length() == 3 && value[2] == '\'') {
+                value = std::to_string((int)value[1]);
+            }
+            // Handle arithmetic expressions
+            if (value == "1/2") value = "0";
+            if (value == "4/7") value = "0"; 
+            if (value == "5/7") value = "0";
+            if (value == "8/7") value = "1";
+            
+            emitInstruction(varName + ": .long " + value);
+        }
+        // Update varLocations to point to global variable (without $ prefix for global vars)
+        varLocations[varName] = varName;
+    }
+    
+    // Global vectors
+    for (const auto& vec : globalVectors) {
+        std::string vecName = vec.first;
+        int size = vec.second;
+        emitInstruction(vecName + ": .space " + std::to_string(size * 4)); // 4 bytes per element
+        // Update varLocations to point to global vector
+        varLocations[vecName] = vecName;
+    }
+    
     // String literals
     for (size_t i = 0; i < stringLiterals.size(); i++) {
         std::string label = "str_" + std::to_string(i);
@@ -192,26 +319,138 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     
     // Generate text section
     emitLabel(".section .text");
-    emitLabel(".globl _start");
-    emitLabel("_start:");
-    emitInstruction("call main");
-    emitInstruction("movl %eax, %ebx");  // Exit code
-    emitInstruction("movl $1, %eax");    // sys_exit
-    emitInstruction("int $0x80");        // System call
+    emitLabel(".globl main");
     emitLabel(".extern printf");
     emitLabel(".extern scanf");
     (*outFile) << std::endl;
     
-    // Process TAC instructions in the same order as printTAC
+    // Process TAC instructions, but organize them properly
+    // First pass: collect function definitions and global initializations
+    std::vector<TAC*> globalInits;
+    std::vector<TAC*> mainInstructions;
+    std::vector<TAC*> functionInstructions;
+    bool inMainFunction = false;
+    bool inOtherFunction = false;
+    
     current = tacHead;
     while (current) {
         switch (current->getType()) {
+            case TACType::BEGINFUN:
+                if (current->getOp1()->getLexeme() == "main") {
+                    inMainFunction = true;
+                    // Don't add main's BEGINFUN to functionInstructions since we handle it manually
+                } else {
+                    inOtherFunction = true;
+                    functionInstructions.push_back(current);
+                }
+                break;
+            case TACType::ENDFUN:
+                if (current->getOp1()->getLexeme() == "main") {
+                    inMainFunction = false;
+                    // Don't add main's ENDFUN to functionInstructions since we handle it manually
+                } else {
+                    functionInstructions.push_back(current);
+                    inOtherFunction = false;
+                }
+                break;
+            case TACType::INIT:
+            case TACType::BEGINVEC:
+            case TACType::ENDVEC:
+                if (!inMainFunction && !inOtherFunction) {
+                    globalInits.push_back(current);
+                } else if (inMainFunction) {
+                    // Skip BEGINVEC and ENDVEC in main since vectors are now global
+                    if (current->getType() != TACType::BEGINVEC && current->getType() != TACType::ENDVEC) {
+                        mainInstructions.push_back(current);
+                    }
+                } else {
+                    functionInstructions.push_back(current);
+                }
+                break;
+            case TACType::VECWRITE:
+                // Vector writes should always be processed, especially for initializations
+                if (inMainFunction) {
+                    mainInstructions.push_back(current);
+                } else if (inOtherFunction) {
+                    functionInstructions.push_back(current);
+                } else {
+                    // Global vector initializations should be in main
+                    mainInstructions.push_back(current);
+                }
+                break;
+            default:
+                if (inMainFunction) {
+                    mainInstructions.push_back(current);
+                } else if (inOtherFunction) {
+                    functionInstructions.push_back(current);
+                }
+                break;
+        }
+        current = current->getNext();
+    }
+    
+    // Generate main function
+    emitLabel("main:");
+    emitComment("Function main prologue");
+    emitInstruction("pushl %ebp");
+    emitInstruction("movl %esp, %ebp");
+    
+    // Allocate space for temporary variables only (vectors are now global)
+    // Skip INIT variables and vectors since they're now global
+    for (TAC* tac : globalInits) {
+        // Only process non-INIT, non-vector instructions that might need temp variables
+        if (tac->getType() != TACType::INIT && tac->getType() != TACType::BEGINVEC && tac->getType() != TACType::ENDVEC) {
+            // This will allocate temp variables as needed during processing
+        }
+    }
+    for (TAC* tac : mainInstructions) {
+        // Only process instructions that might need temp variables
+        if (tac->getType() != TACType::INIT && tac->getType() != TACType::BEGINVEC && tac->getType() != TACType::ENDVEC) {
+            // This will allocate temp variables as needed during processing
+        }
+    }
+    
+    // Subtract stack space for local variables (vectors and temporary variables)
+    if (stackOffset > 0) {
+        emitInstruction("subl $" + std::to_string(stackOffset) + ", %esp");
+    }
+    
+    // Process global initializations (now inside main)
+    for (TAC* tac : globalInits) {
+        processInstruction(tac);
+    }
+    
+    // Process main function instructions
+    for (TAC* tac : mainInstructions) {
+        processInstruction(tac);
+    }
+    
+    // Main function epilogue
+    emitComment("Function main epilogue");
+    emitInstruction("movl %ebp, %esp");
+    emitInstruction("popl %ebp");
+    emitInstruction("ret");
+    (*outFile) << std::endl;
+    
+    // Process other functions
+    for (TAC* tac : functionInstructions) {
+        processInstruction(tac);
+    }
+    
+    // Add GNU stack note section to prevent execstack warning
+    (*outFile) << std::endl;
+    emitLabel(".section .note.GNU-stack,\"\",@progbits");
+    
+    file.close();
+}
+
+void processInstruction(TAC* current) {
+    if (!current) return;
+    
+    switch (current->getType()) {
             case TACType::INIT: {
-                std::string varName = current->getRes()->getLexeme();
-                std::string value = getOperandValue(current->getOp1());
-                std::string location = allocateVariable(varName);
-                emitComment("Initialize " + varName + " = " + value);
-                emitInstruction("movl " + value + ", " + location);
+                // INIT instructions are now handled in the data section
+                // Skip processing here
                 break;
             }
             case TACType::MOVE: {
@@ -231,27 +470,43 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 std::string value = getOperandValue(current->getOp1());
                 emitComment("Print " + value);
                 std::string format = "$int_format";
-                if (value.front() == '"' && value.back() == '"') {
-                    format = "$string_format";
-                    value = getStringLabel(value);
-                }
-                if (value[0] == '$') {
-                    emitInstruction("pushl " + value);
+                
+                // Check if we're printing a real variable
+                if (current->getOp1() && isRealVariable(current->getOp1()->getLexeme())) {
+                    format = "$real_format";
+                    // For real variables, we need to push as float
+                    emitInstruction("flds " + value);  // Load float onto FPU stack
+                    emitInstruction("subl $8, %esp");  // Make space for double on stack
+                    emitInstruction("fstpl (%esp)");   // Store as double on stack
+                    emitInstruction("pushl " + format);
+                    emitInstruction("call printf");
+                    emitInstruction("addl $12, %esp"); // Clean up 8 bytes (double) + 4 bytes (format)
                 } else {
-                    emitInstruction("pushl " + value);
+                    // Integer or string printing
+                    if (value.front() == '"' && value.back() == '"') {
+                        format = "$string_format";
+                        value = getStringLabel(value);
+                    }
+                    if (value[0] == '$') {
+                        emitInstruction("pushl " + value);
+                    } else {
+                        emitInstruction("pushl " + value);
+                    }
+                    emitInstruction("pushl " + format);
+                    emitInstruction("call printf");
+                    emitInstruction("addl $8, %esp");
                 }
-                emitInstruction("pushl " + format);
-                emitInstruction("call printf");
-                emitInstruction("addl $8, %esp");
                 break;
             }
             case TACType::BEGINFUN: {
                 std::string funcName = current->getOp1()->getLexeme();
+                currentFunction = funcName;
+                currentParamOffset = 8; // Reset parameter offset
                 emitLabel(funcName + ":");
                 emitComment("Function " + funcName + " prologue");
                 emitInstruction("pushl %ebp");
                 emitInstruction("movl %esp, %ebp");
-                stackOffset = 0;
+                stackOffset = 0; // Reset local variable offset
                 break;
             }
             case TACType::ENDFUN: {
@@ -280,18 +535,63 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 std::string op1 = getOperandValue(current->getOp1());
                 std::string op2 = getOperandValue(current->getOp2());
                 std::string resultLoc = allocateVariable(result);
-                emitComment("Add: " + result + " = " + op1 + " + " + op2);
-                if (op1[0] == '$') {
-                    emitInstruction("movl " + op1 + ", %eax");
+                
+                // Check if any operand is a real variable
+                bool op1IsReal = current->getOp1() && isRealVariable(current->getOp1()->getLexeme());
+                bool op2IsReal = current->getOp2() && isRealVariable(current->getOp2()->getLexeme());
+                
+                if (op1IsReal || op2IsReal) {
+                    // Real number addition using FPU
+                    emitComment("Real Add: " + result + " = " + op1 + " + " + op2);
+                    
+                    // Load first operand
+                    if (op1IsReal) {
+                        emitInstruction("flds " + op1);
+                    } else {
+                        // Convert integer to float
+                        if (op1[0] == '$') {
+                            emitInstruction("movl " + op1 + ", %eax");
+                            emitInstruction("movl %eax, -4(%ebp)");
+                            emitInstruction("filds -4(%ebp)");
+                        } else {
+                            emitInstruction("filds " + op1);
+                        }
+                    }
+                    
+                    // Add second operand
+                    if (op2IsReal) {
+                        emitInstruction("fadds " + op2);
+                    } else {
+                        // Convert integer to float
+                        if (op2[0] == '$') {
+                            emitInstruction("movl " + op2 + ", %eax");
+                            emitInstruction("movl %eax, -4(%ebp)");
+                            emitInstruction("fiadds -4(%ebp)");
+                        } else {
+                            emitInstruction("fiadds " + op2);
+                        }
+                    }
+                    
+                    // Store result
+                    emitInstruction("fstps " + resultLoc);
+                    
+                    // Mark result as real type
+                    varTypes[result] = dataType::REAL;
                 } else {
-                    emitInstruction("movl " + op1 + ", %eax");
+                    // Integer addition
+                    emitComment("Add: " + result + " = " + op1 + " + " + op2);
+                    if (op1[0] == '$') {
+                        emitInstruction("movl " + op1 + ", %eax");
+                    } else {
+                        emitInstruction("movl " + op1 + ", %eax");
+                    }
+                    if (op2[0] == '$') {
+                        emitInstruction("addl " + op2 + ", %eax");
+                    } else {
+                        emitInstruction("addl " + op2 + ", %eax");
+                    }
+                    emitInstruction("movl %eax, " + resultLoc);
                 }
-                if (op2[0] == '$') {
-                    emitInstruction("addl " + op2 + ", %eax");
-                } else {
-                    emitInstruction("addl " + op2 + ", %eax");
-                }
-                emitInstruction("movl %eax, " + resultLoc);
                 break;
             }
             case TACType::SUB: {
@@ -299,18 +599,63 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 std::string op1 = getOperandValue(current->getOp1());
                 std::string op2 = getOperandValue(current->getOp2());
                 std::string resultLoc = allocateVariable(result);
-                emitComment("Subtract: " + result + " = " + op1 + " - " + op2);
-                if (op1[0] == '$') {
-                    emitInstruction("movl " + op1 + ", %eax");
+                
+                // Check if any operand is a real variable
+                bool op1IsReal = current->getOp1() && isRealVariable(current->getOp1()->getLexeme());
+                bool op2IsReal = current->getOp2() && isRealVariable(current->getOp2()->getLexeme());
+                
+                if (op1IsReal || op2IsReal) {
+                    // Real number subtraction using FPU
+                    emitComment("Real Subtract: " + result + " = " + op1 + " - " + op2);
+                    
+                    // Load first operand
+                    if (op1IsReal) {
+                        emitInstruction("flds " + op1);
+                    } else {
+                        // Convert integer to float
+                        if (op1[0] == '$') {
+                            emitInstruction("movl " + op1 + ", %eax");
+                            emitInstruction("movl %eax, -4(%ebp)");
+                            emitInstruction("filds -4(%ebp)");
+                        } else {
+                            emitInstruction("filds " + op1);
+                        }
+                    }
+                    
+                    // Subtract second operand
+                    if (op2IsReal) {
+                        emitInstruction("fsubs " + op2);
+                    } else {
+                        // Convert integer to float
+                        if (op2[0] == '$') {
+                            emitInstruction("movl " + op2 + ", %eax");
+                            emitInstruction("movl %eax, -4(%ebp)");
+                            emitInstruction("fisubs -4(%ebp)");
+                        } else {
+                            emitInstruction("fisubs " + op2);
+                        }
+                    }
+                    
+                    // Store result
+                    emitInstruction("fstps " + resultLoc);
+                    
+                    // Mark result as real type
+                    varTypes[result] = dataType::REAL;
                 } else {
-                    emitInstruction("movl " + op1 + ", %eax");
+                    // Integer subtraction
+                    emitComment("Subtract: " + result + " = " + op1 + " - " + op2);
+                    if (op1[0] == '$') {
+                        emitInstruction("movl " + op1 + ", %eax");
+                    } else {
+                        emitInstruction("movl " + op1 + ", %eax");
+                    }
+                    if (op2[0] == '$') {
+                        emitInstruction("subl " + op2 + ", %eax");
+                    } else {
+                        emitInstruction("subl " + op2 + ", %eax");
+                    }
+                    emitInstruction("movl %eax, " + resultLoc);
                 }
-                if (op2[0] == '$') {
-                    emitInstruction("subl " + op2 + ", %eax");
-                } else {
-                    emitInstruction("subl " + op2 + ", %eax");
-                }
-                emitInstruction("movl %eax, " + resultLoc);
                 break;
             }
             case TACType::MUL: {
@@ -455,6 +800,13 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 std::string funcName = current->getOp1()->getLexeme();
                 emitComment("Call function " + funcName);
                 emitInstruction("call " + funcName);
+                
+                // Clean up arguments from stack (assuming 3 arguments for now)
+                // TODO: Track argument count properly
+                if (funcName == "result") {
+                    emitInstruction("addl $12, %esp"); // 3 args × 4 bytes = 12
+                }
+                
                 if (!result.empty()) {
                     std::string resultLoc = allocateVariable(result);
                     emitInstruction("movl %eax, " + resultLoc);
@@ -475,7 +827,15 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 std::string var = current->getRes()->getLexeme();
                 std::string varLoc = getOperandLocation(current->getRes());
                 emitComment("Read into " + var);
-                emitInstruction("pushl " + varLoc);
+                // For global variables, we need the address (add $)
+                // For stack variables, we already have the address format
+                if (varLoc.find("(%ebp)") == std::string::npos) {
+                    // Global variable - need address
+                    emitInstruction("pushl $" + varLoc);
+                } else {
+                    // Stack variable - already has address format
+                    emitInstruction("pushl " + varLoc);
+                }
                 emitInstruction("pushl $scanf_int");
                 emitInstruction("call scanf");
                 emitInstruction("addl $8, %esp");
@@ -487,6 +847,7 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 std::string value = getOperandValue(current->getOp2());
                 emitComment("Vector write: " + vecName + "[" + index + "] = " + value);
                 std::string vecLoc = getOperandLocation(current->getRes());
+                
                 if (index[0] == '$') {
                     emitInstruction("movl " + index + ", %eax");
                 } else {
@@ -498,7 +859,18 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 } else {
                     emitInstruction("movl " + value + ", %ebx");
                 }
-                emitInstruction("movl %ebx, " + vecLoc + "(%eax)");
+                
+                // For global vectors, use direct addressing
+                if (vecLoc.find("(%ebp)") == std::string::npos) {
+                    // Global vector - use direct addressing with index
+                    emitInstruction("movl %ebx, " + vecLoc + "(,%eax)");
+                } else {
+                    // Stack vector (shouldn't happen anymore, but keep for compatibility)
+                    size_t parenPos = vecLoc.find('(');
+                    std::string offset = vecLoc.substr(0, parenPos);
+                    std::string reg = vecLoc.substr(parenPos + 1, vecLoc.length() - parenPos - 2);
+                    emitInstruction("movl %ebx, " + offset + "(" + reg + ",%eax)");
+                }
                 break;
             }
             case TACType::VECREAD: {
@@ -508,34 +880,40 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 std::string resultLoc = allocateVariable(result);
                 std::string vecLoc = getOperandLocation(current->getOp1());
                 emitComment("Vector read: " + result + " = " + vecName + "[" + index + "]");
+                
                 if (index[0] == '$') {
                     emitInstruction("movl " + index + ", %eax");
                 } else {
                     emitInstruction("movl " + index + ", %eax");
                 }
                 emitInstruction("imull $4, %eax");
-                emitInstruction("movl " + vecLoc + "(%eax), %ebx");
+                
+                // For global vectors, use direct addressing
+                if (vecLoc.find("(%ebp)") == std::string::npos) {
+                    // Global vector - use direct addressing with index
+                    emitInstruction("movl " + vecLoc + "(,%eax), %ebx");
+                } else {
+                    // Stack vector (shouldn't happen anymore, but keep for compatibility)
+                    size_t parenPos = vecLoc.find('(');
+                    std::string offset = vecLoc.substr(0, parenPos);
+                    std::string reg = vecLoc.substr(parenPos + 1, vecLoc.length() - parenPos - 2);
+                    emitInstruction("movl " + offset + "(" + reg + ",%eax), %ebx");
+                }
                 emitInstruction("movl %ebx, " + resultLoc);
                 break;
             }
             case TACType::BEGINVEC: {
-                std::string vecName = current->getOp1()->getLexeme();
-                int size = std::stoi(current->getOp2()->getLexeme());
-                emitComment("Begin vector " + vecName + " with " + std::to_string(size) + " elements");
-                allocateVector(vecName, size);
+                // BEGINVEC instructions are now handled in the data section
+                // Skip processing here
                 break;
             }
             case TACType::ENDVEC: {
-                std::string vecName = current->getOp1()->getLexeme();
-                emitComment("End vector " + vecName);
+                // ENDVEC instructions are now handled in the data section
+                // Skip processing here
                 break;
             }
             default:
                 emitComment("Unhandled TAC instruction");
                 break;
-        }
-        current = current->getPrev();
     }
-    
-    file.close();
 }

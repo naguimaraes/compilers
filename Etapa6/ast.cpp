@@ -105,7 +105,7 @@ void printASTToFile(const std::string& filename, ASTNode* node) {
         return;
     }
 
-    outFile << "------------------------- AST Structure -------------------------\n";
+    outFile << "-------------- AST STRUCTURE MADE BY NATHAN GUIMARAES (334437) --------------\n";
     printASTToFileRecursive(outFile, 0, node);
     
     outFile.close();
@@ -636,6 +636,16 @@ void decompileAST(std::ofstream& outFile, ASTNode* node, int indent) {
                     // Process any children
                     for (ASTNode* child : node->getChildren()) {
                         handlePrintElement(child);
+                    }
+                } else if (node->getType() == ASTNodeType::VECTOR_ACCESS) {
+                    decompileAST(outFile, node, 0);
+                    outFile << " ";
+                    // For VECTOR_ACCESS, only process LITERAL children that are not part of the access itself
+                    // Skip the first two children (vector name and index) and only process additional literals
+                    for (size_t i = 2; i < node->getChildren().size(); i++) {
+                        if (node->getChildren()[i]->getType() == ASTNodeType::LITERAL) {
+                            handlePrintElement(node->getChildren()[i]);
+                        }
                     }
                 }
             };

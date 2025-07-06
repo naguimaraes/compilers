@@ -2,6 +2,7 @@
 // Three Address Code (TAC) implementation file made by Nathan Alonso Guimarães (00334437)
 
 #include "tac.hpp"
+#include "parser.tab.hpp"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -130,16 +131,16 @@ TAC* tacJoin(TAC* tac1, TAC* tac2) {
     if (!tac1) return tac2;
     if (!tac2) return tac1;
     
-    // Find the last instruction in tac1 (assuming inverted list)
+    // Find the last instruction in tac1 by going forward
     TAC* last = tac1;
-    while (last->getPrev()) {
-        last = last->getPrev();
+    while (last->getNext()) {
+        last = last->getNext();
     }
     
     // Connect tac1 and tac2
-    last->setPrev(tac2);
+    last->setNext(tac2);
     if (tac2) {
-        tac2->setNext(last);
+        tac2->setPrev(last);
     }
     
     return tac1;
@@ -172,7 +173,8 @@ void printTAC(TAC* tac) {
     if (!tac) return;
 
     // Print table header
-    std::cout << "--------------- TAC Generation ---------------" << std::endl;
+    std::cout << "+-------------------------------------------------------+" << std::endl;
+    std::cout << "|       TAC list made by Nathan Guimaraes (334437)      |" << std::endl;
     std::cout << "+-------------+-------------+-------------+-------------+" << std::endl;
     std::cout << "| " << std::left << std::setw(12) << "OPERATION";
     std::cout << "| " << std::setw(12) << "RESULT";
@@ -180,7 +182,7 @@ void printTAC(TAC* tac) {
     std::cout << "| " << std::setw(12) << "OPERAND2";
     std::cout << "|" << std::endl;
     std::cout << "+-------------+-------------+-------------+-------------+" << std::endl;
-    
+
     // Print from current position backwards (reverse order)
     TAC* current = tac;
     while (current) {
@@ -203,7 +205,7 @@ void printTACToFile(const std::string& filename, TAC* tac) {
     
     // Print table header
     outFile << "+-------------------------------------------------------+" << std::endl;
-    outFile << "|                       TAC LIST                        |" << std::endl;
+    outFile << "|       TAC LIST MADE BY NATHAN GUIMARAES (334437)      |" << std::endl;
     outFile << "+-------------+-------------+-------------+-------------+" << std::endl;
     outFile << "| " << std::left << std::setw(12) << "OPERATION";
     outFile << "| " << std::setw(12) << "RESULT";
@@ -212,7 +214,7 @@ void printTACToFile(const std::string& filename, TAC* tac) {
     outFile << "|" << std::endl;
     outFile << "+-------------+-------------+-------------+-------------+" << std::endl;
     
-    // Print from current position backwards (reverse order)
+    // Print from current position forwards (normal order)
     TAC* current = tac;
     while (current) {
         // Don't print SYMBOL as they are utility instructions
@@ -236,7 +238,7 @@ void printTACToFile(const std::string& filename, TAC* tac) {
             outFile << "| " << std::setw(12) << op2Str;
             outFile << "|" << std::endl;
         }
-        current = current->getPrev();
+        current = current->getNext();
     }
     
     // Print table footer
@@ -254,13 +256,52 @@ void tacPrintBackwards(TAC* tac) {
     }
 }
 
+// Helper function to normalize numeric symbols for TAC generation
+Symbol* normalizeNumericSymbol(Symbol* symbol) {
+    if (!symbol) return symbol;
+    
+    // Check if it's a numeric literal (integer)
+    if (symbol->getType() == LIT_INT) {
+        std::string lexeme = symbol->getLexeme();
+        std::string normalized = removeZeros(lexeme);
+        
+        // If the normalized value is different, create a new symbol
+        if (normalized != lexeme) {
+            return insertSymbol(normalized, LIT_INT, symbol->getLineNumber());
+        }
+    }
+    
+    // Check if it's a real number literal (format a/b)
+    if (symbol->getType() == LIT_REAL) {
+        std::string lexeme = symbol->getLexeme();
+        size_t slashPos = lexeme.find('/');
+        if (slashPos != std::string::npos) {
+            std::string numeratorStr = lexeme.substr(0, slashPos);
+            std::string denominatorStr = lexeme.substr(slashPos + 1);
+            
+            // Remove leading zeros from both parts
+            std::string normalizedNumerator = removeZeros(numeratorStr);
+            std::string normalizedDenominator = removeZeros(denominatorStr);
+            
+            std::string normalized = normalizedNumerator + "/" + normalizedDenominator;
+            
+            // If the normalized value is different, create a new symbol
+            if (normalized != lexeme) {
+                return insertSymbol(normalized, LIT_REAL, symbol->getLineNumber());
+            }
+        }
+    }
+    
+    return symbol;
+}
+
 // Helper function to get the result symbol from a TAC sequence
 Symbol* getResultSymbol(TAC* tacSequence, ASTNode* node) {
     if (!tacSequence && !node) return nullptr;
     
     // If the node is a direct symbol, return it
     if (node && node->getType() == ASTNodeType::SYMBOL) {
-        return node->getSymbol();
+        return normalizeNumericSymbol(node->getSymbol());
     }
     
     // If the node is a literal (numbers, characters, etc), return its symbol
@@ -269,17 +310,24 @@ Symbol* getResultSymbol(TAC* tacSequence, ASTNode* node) {
                  node->getType() == ASTNodeType::INT ||
                  node->getType() == ASTNodeType::REAL ||
                  node->getType() == ASTNodeType::CHAR)) {
-        return node->getSymbol();
+        return normalizeNumericSymbol(node->getSymbol());
     }
     
     // Otherwise, find the last TAC instruction with a result
     if (tacSequence) {
         TAC* current = tacSequence;
-        while (current && !current->getRes()) {
-            current = current->getPrev();
+        TAC* lastWithResult = nullptr;
+        
+        // Find the last instruction with a result by going forward
+        while (current) {
+            if (current->getRes()) {
+                lastWithResult = current;
+            }
+            current = current->getNext();
         }
-        if (current) {
-            return current->getRes();
+        
+        if (lastWithResult) {
+            return lastWithResult->getRes();
         }
     }
     
@@ -705,17 +753,67 @@ TAC* processPrintList(ASTNode* node) {
                 result = tacJoin(result, nextTac);
             }
         } else {
-            // For other types, just generate normal TAC
-            TAC* valueCode = generateTAC(node);
-            Symbol* valueSymbol = getResultSymbol(valueCode, node);
-            
-            TAC* printTac = tacCreate(TACType::PRINT, nullptr, valueSymbol, nullptr);
-            result = tacJoin(valueCode, printTac);
-            
-            // Process the next item in the list (first child)
-            if (!node->getChildren().empty()) {
-                TAC* nextTac = processPrintList(node->getChildren()[0]);
-                result = tacJoin(result, nextTac);
+            // For arithmetic operations and other expressions, don't process children as separate print items
+            if (node->getType() == ASTNodeType::ADD ||
+                node->getType() == ASTNodeType::SUBTRACT ||
+                node->getType() == ASTNodeType::MULTIPLY ||
+                node->getType() == ASTNodeType::DIVIDE ||
+                node->getType() == ASTNodeType::MODULO ||
+                node->getType() == ASTNodeType::LESS_THAN ||
+                node->getType() == ASTNodeType::GREATER_THAN ||
+                node->getType() == ASTNodeType::LESS_EQUAL ||
+                node->getType() == ASTNodeType::GREATER_EQUAL ||
+                node->getType() == ASTNodeType::EQUAL ||
+                node->getType() == ASTNodeType::DIFFERENT ||
+                node->getType() == ASTNodeType::AND ||
+                node->getType() == ASTNodeType::OR ||
+                node->getType() == ASTNodeType::NOT ||
+                node->getType() == ASTNodeType::FUNCTION_CALL) {
+                
+                // For expressions, just generate TAC and print the result
+                TAC* valueCode = generateTAC(node);
+                Symbol* valueSymbol = getResultSymbol(valueCode, node);
+                
+                TAC* printTac = tacCreate(TACType::PRINT, nullptr, valueSymbol, nullptr);
+                result = tacJoin(valueCode, printTac);
+                
+                // Special case: check if there's a third child that's a literal (like "\n")
+                // This happens when the parser includes "\n" as part of the expression
+                if (node->getChildren().size() > 2 && 
+                    node->getChildren()[2]->getType() == ASTNodeType::LITERAL) {
+                    TAC* nextTac = processPrintList(node->getChildren()[2]);
+                    result = tacJoin(result, nextTac);
+                }
+                
+                // Don't process first two children as separate print items for expressions
+            } else {
+                // For other types (literals, symbols), process normally
+                TAC* valueCode = generateTAC(node);
+                Symbol* valueSymbol = getResultSymbol(valueCode, node);
+                
+                TAC* printTac = tacCreate(TACType::PRINT, nullptr, valueSymbol, nullptr);
+                result = tacJoin(valueCode, printTac);
+                
+                // Process the next item in the list (first child) only for non-expression nodes
+                if (!node->getChildren().empty() && 
+                    node->getType() != ASTNodeType::ADD &&
+                    node->getType() != ASTNodeType::SUBTRACT &&
+                    node->getType() != ASTNodeType::MULTIPLY &&
+                    node->getType() != ASTNodeType::DIVIDE &&
+                    node->getType() != ASTNodeType::MODULO &&
+                    node->getType() != ASTNodeType::LESS_THAN &&
+                    node->getType() != ASTNodeType::GREATER_THAN &&
+                    node->getType() != ASTNodeType::LESS_EQUAL &&
+                    node->getType() != ASTNodeType::GREATER_EQUAL &&
+                    node->getType() != ASTNodeType::EQUAL &&
+                    node->getType() != ASTNodeType::DIFFERENT &&
+                    node->getType() != ASTNodeType::AND &&
+                    node->getType() != ASTNodeType::OR &&
+                    node->getType() != ASTNodeType::NOT &&
+                    node->getType() != ASTNodeType::FUNCTION_CALL) {
+                    TAC* nextTac = processPrintList(node->getChildren()[0]);
+                    result = tacJoin(result, nextTac);
+                }
             }
         }
     }

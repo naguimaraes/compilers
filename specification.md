@@ -42,7 +42,7 @@
 - Loops:
 
     ```c
-    while (expression) {
+    while (expression) do {
             // statements
     }
 

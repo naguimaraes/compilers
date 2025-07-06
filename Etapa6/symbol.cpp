@@ -67,6 +67,14 @@ Symbol *insertSymbol(string lex, int type, int lineNumber) {
     }
 }
 
+Symbol *getSymbol(string lex) {
+    auto it = symbolTable.find(lex);
+    if (it != symbolTable.end()) {
+        return it->second;
+    }
+    return nullptr;
+}
+
 string invertNumberInt(string number){
         
     string invertedNum(number.size(), '\0');
@@ -75,12 +83,15 @@ string invertNumberInt(string number){
         invertedNum[i] = number[number.size() - i - 1];
     }
 
-    // Remove leading zeros
-    size_t firstNonZero = invertedNum.find_first_not_of('0');
+    return invertedNum;
+}
+
+string removeZeros(string number) {
+    size_t firstNonZero = number.find_first_not_of('0');
     if (firstNonZero == string::npos) {
         return "0"; // All zeros case
     }
-    return invertedNum.substr(firstNonZero);
+    return number.substr(firstNonZero);
 }
 
 string invertNumberReal(string number){
@@ -164,7 +175,13 @@ string tokenName(int token){
 }
 
 void printSymbolTable() {
-    printf("\n-------- Symbol Table --------\n");
+    std::cout << "+-----------------------------------------------------------------+\n";
+    std::cout << "|          Symbol Table made by Nathan Guimaraes (334437)         |\n";
+    std::cout << "+--------------------------------+--------------------------------+\n";
+    std::cout << "| " << std::left << std::setw(31) << "LEXEME";
+    std::cout << "| " << std::setw(31) << "TYPE";
+    std::cout << "|\n";
+    std::cout << "+--------------------------------+--------------------------------+\n";
     for (auto &lex : symbolTable){
         printf("Lex: %s, Type: %s\n", lex.first.c_str(), tokenName(lex.second->getType()).c_str());
     }
@@ -178,10 +195,10 @@ void printSymbolTableToFile(const string& filename) {
     }
 
     outFile << "+-----------------------------------------------------------------+\n";
-    outFile << "|                           SYMBOL TABLE                          |\n";
+    outFile << "|          SYMBOL TABLE MADE BY NATHAN GUIMARAES (334437)         |\n";
     outFile << "+--------------------------------+--------------------------------+\n";
-    outFile << "| " << std::left << std::setw(31) << "LEXEME";
-    outFile << "| " << std::setw(31) << "TYPE";
+    outFile << "| " << std::left << std::setw(31) << "TYPE";
+    outFile << "| " << std::setw(31) << "LEXEME";
     outFile << "|\n";
     outFile << "+--------------------------------+--------------------------------+\n";
     
@@ -197,8 +214,8 @@ void printSymbolTableToFile(const string& filename) {
             type = type.substr(0, 27) + "...";
         }
         
-        outFile << "| " << std::left << std::setw(31) << lexeme;
-        outFile << "| " << std::setw(31) << type;
+        outFile << "| " << std::left << std::setw(31) << type;
+        outFile << "| " << std::setw(31) << lexeme;
         outFile << "|\n";
     }
     

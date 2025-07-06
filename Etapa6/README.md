@@ -1,225 +1,189 @@
-# Etapa 6 - Geração de Código Assembly x86
+# Stage 6 - Target Code Generation
 
-## Descrição
+## Description
 
-Esta etapa implementa a geração de código assembly x86 a partir das instruções TAC (Three-Address Code) geradas na Etapa 5. O gerador traduz cada tipo de instrução TAC em sequências equivalentes de instruções assembly x86.
+This stage implements x86 assembly code generation from TAC (Three-Address Code) instructions generated in Stage 5. The generator translates each type of TAC instruction into equivalent sequences of x86 assembly instructions.
 
-## Arquivos Principais
+## Main Files
 
-- `asm.hpp` - Interface do gerador de assembly
-- `asm.cpp` - Implementação do gerador de assembly
-- `main.cpp` - Programa principal integrado com geração de assembly
-- `Makefile` - Atualizado para incluir compilação do gerador de assembly
+- `asm.hpp` - Assembly generator interface
+- `asm.cpp` - Assembly generator implementation
+- `main.cpp` - Main program integrated with assembly generation
+- `Makefile` - Updated to include assembly generator compilation
 
-## Funcionalidades Implementadas
+## Implemented Features
 
-### Tipos de TAC Suportados
+### Supported TAC Types
 
-1. **Inicialização de Variáveis (INIT)**
-   - Aloca espaço na stack e inicializa com valor
-   - Exemplo: `int a = 10;` → `movl $10, -4(%ebp)`
+1. **Variable Initialization (INIT)**
+   - Allocates space on stack and initializes with value
+   - Support for both integer and real variables
+   - Example: `int a = 10;` → `movl $10, -4(%ebp)`
+   - Example: `real r = 7/10;` → `r: .float 0.7`
 
-2. **Atribuições (MOVE)**
-   - Move valores entre variáveis e registradores
-   - Exemplo: `a = b;` → `movl -8(%ebp), %eax; movl %eax, -4(%ebp)`
+2. **Assignments (MOVE)**
+   - Moves values between variables and registers
+   - Example: `a = b;` → `movl -8(%ebp), %eax; movl %eax, -4(%ebp)`
 
-3. **Operações Aritméticas**
-   - **ADD**: `addl src, dest`
-   - **SUB**: `subl src, dest`
-   - **MUL**: `imull src, dest`
-   - **DIV**: `idivl divisor` (quociente em %eax)
-   - **MOD**: `idivl divisor` (resto em %edx)
+3. **Arithmetic Operations**
+   - **ADD**: `addl src, dest` (integers) / `fadds src` (reals)
+   - **SUB**: `subl src, dest` (integers) / `fsubs src` (reals)
+   - **MUL**: `imull src, dest` (integers) / `fmuls src` (reals)
+   - **DIV**: `idivl divisor` (integers) / `fdivs src` (reals)
+   - **MOD**: `idivl divisor` (remainder in %edx)
 
-4. **Operações de Comparação**
-   - **LT, GT, LE, GE, EQ, NE**: Geram código com comparação e saltos condicionais
-   - Resultado em variável temporária (0 = falso, 1 = verdadeiro)
+4. **Comparison Operations**
+   - **LT, GT, LE, GE, EQ, NE**: Generate code with comparison and conditional jumps
+   - Result in temporary variable (0 = false, 1 = true)
 
-5. **Operações Lógicas**
+5. **Logical Operations**
    - **AND**: `andl src, dest`
    - **OR**: `orl src, dest`
-   - **NOT**: Inversão lógica com comparação a zero
+   - **NOT**: Logical inversion with zero comparison
 
-6. **Controle de Fluxo**
-   - **LABEL**: Marcadores no código
-   - **JUMP**: Salto incondicional `jmp label`
-   - **IFZ**: Salto condicional se zero `je label`
+6. **Control Flow**
+   - **LABEL**: Code markers
+   - **JUMP**: Unconditional jump `jmp label`
+   - **IFZ**: Conditional jump if zero `je label`
 
-7. **Funções**
-   - **BEGINFUN**: Prólogo da função (configuração stack frame)
-   - **ENDFUN**: Epílogo da função (restauração stack frame)
-   - **CALL**: Chamada de função `call function_name`
-   - **ARG**: Colocação de argumentos na stack `pushl arg`
-   - **RET**: Retorno de função `movl value, %eax`
+7. **Functions**
+   - **BEGINFUN**: Function prologue (stack frame setup)
+   - **ENDFUN**: Function epilogue (stack frame restoration)
+   - **CALL**: Function call `call function_name`
+   - **ARG**: Argument placement on stack `pushl arg`
+   - **RET**: Function return `movl value, %eax`
 
-8. **Entrada/Saída**
-   - **PRINT**: Chamada `printf` com formato apropriado
-   - **READ**: Chamada `scanf` para leitura
+8. **Input/Output**
+   - **PRINT**: `printf` call with appropriate format
+     - Integers: `"%d"` format
+     - Reals: `"%.2f"` format
+     - Characters: `"%c"` format
+     - Strings: `"%s"` format
+   - **READ**: `scanf` call for input
 
-9. **Vetores**
-   - **VECWRITE**: Escrita em vetor usando endereçamento calculado
-   - **VECREAD**: Leitura de vetor usando endereçamento calculado
-   - **BEGINVEC/ENDVEC**: Delimitadores de declaração de vetor
+9. **Vectors**
+   - **VECWRITE**: Vector writing using calculated addressing
+   - **VECREAD**: Vector reading using calculated addressing
+   - **BEGINVEC/ENDVEC**: Vector declaration delimiters
 
-## Características do Gerador
+10. **Real Number Support**
+    - **Data section**: `.float` declarations for real variables
+    - **FPU operations**: Uses x87 floating-point unit instructions
+    - **Real arithmetic**: `fadds`, `fsubs`, `fmuls`, `fdivs`
+    - **Real printing**: FPU stack manipulation for printf
+    - **Fraction evaluation**: Automatic evaluation of expressions like `7/10` → `0.7`
 
-### Gerenciamento de Memória
-- **Stack-based**: Todas as variáveis são alocadas na stack
-- **Offset automático**: Calcula offsets automaticamente a partir de %ebp
-- **Mapeamento**: Mantém tabela de localização de variáveis
+## Generator Characteristics
 
-### Convenções de Registradores
-- **%eax**: Registrador principal para operações e valores de retorno
-- **%ebx**: Registrador auxiliar para operações binárias
-- **%ecx, %edx**: Usados conforme necessário (divisão usa %edx)
-- **%ebp**: Base pointer para stack frame
+### Memory Management
+
+- **Stack-based**: All variables are allocated on the stack
+- **Global variables**: Real and integer variables in `.data` section
+- **Automatic offset**: Automatically calculates offsets from %ebp
+- **Mapping**: Maintains variable location table
+
+### Register Conventions
+
+- **%eax**: Main register for operations and return values
+- **%ebx**: Auxiliary register for binary operations
+- **%ecx, %edx**: Used as needed (division uses %edx)
+- **%ebp**: Base pointer for stack frame
 - **%esp**: Stack pointer
+- **FPU stack**: For floating-point operations
 
-### Formato de Saída
+### Output Format
+
 ```assembly
 .section .data
     int_format: .string "%d"
     char_format: .string "%c"
-    # ... outros formatos
+    real_format: .string "%.2f"
+    string_format: .string "%s"
+    scanf_int: .string "%d"
+    scanf_real: .string "%f"
+    # Global variables
+    variable_name: .long value        # for integers
+    real_variable: .float value       # for reals
 
 .section .text
-.globl _start
-_start:
-    call main
-    movl %eax, %ebx
-    movl $1, %eax
-    int $0x80
+.globl main
+.extern printf
+.extern scanf
 
 main:
     pushl %ebp
     movl %esp, %ebp
-    # ... código da função
+    # ... function code
     movl %ebp, %esp
     popl %ebp
     ret
 ```
 
-## Como Usar
+## How to Use
 
-### Compilação
+### Compilation
+
+To compile the project, run:
+
 ```bash
-make clean
 make
 ```
 
-### Execução
+To compile both the project and the assembly code generated, run:
+
 ```bash
-./etapa6 input.txt output.txt [assembly_output.s]
+make assemble
 ```
 
-**Parâmetros:**
-- `input.txt`: Arquivo fonte na linguagem 2025++1
-- `output.txt`: Código descompilado (da AST)
-- `assembly_output.s`: Arquivo assembly gerado (opcional, padrão: `output.s`)
+To easily run the compiler and generate assembly code, you can use:
 
-### Exemplo de Uso
 ```bash
-# Compilar programa simples
-./etapa6 test_simple.txt test_simple_decompiled.txt test_simple.s
-
-# Compilar exemplo completo
-./etapa6 etapa6.txt etapa6_decompiled.txt etapa6.s
+make run
 ```
 
-## Exemplo de Geração
+### Execution
 
-### Código Fonte
-```c
-int a = 10;
-
-int main() {
-    print a;
-    return 0;
-}
+```bash
+./etapa6 [input_file] [symbol_table_output] [ast_output] [decompiled_output] [tac_output] [assembly_output]
 ```
 
-### TACs Geradas
-```
-| INIT        | a           | 10          |             |
-| BEGINFUN    |             | main        |             |
-| PRINT       |             | a           |             |
-| RET         |             | 0           |             |
-| ENDFUN      |             | main        |             |
-```
+**Parameters:**
 
-### Assembly Gerado
-```assembly
-.section .data
-    int_format: .string "%d"
-    # ... outros formatos
+- `input_file`: Source file in 2025++1 language
+- `symbol_table_output`: Symbol table output file
+- `ast_output`: AST structure output file
+- `decompiled_output`: Decompiled code from AST
+- `tac_output`: TAC instructions output file
+- `assembly_output`: Generated assembly file
 
-.section .text
-.globl _start
-_start:
-    call main
-    movl %eax, %ebx
-    movl $1, %eax
-    int $0x80
+### Usage Example
 
-    # Initialize a = $10
-    movl $10, -4(%ebp)
-main:
-    # Function main prologue
-    pushl %ebp
-    movl %esp, %ebp
-    # Print -4(%ebp)
-    pushl -4(%ebp)
-    pushl $int_format
-    call printf
-    addl $8, %esp
-    # Return $0
-    movl $0, %eax
-    # Function main epilogue
-    movl %ebp, %esp
-    popl %ebp
-    ret
+```bash
+# Compile complete example
+./etapa6 etapa6.2025++1 output/etapa6_symbol_table.txt output/etapa6_AST.txt output/etapa6_decompiled.txt output/etapa6_TAC.txt output/etapa6.s
+
+# Compile assembly to executable
+gcc -m32 output/etapa6.s -o output/etapa6.out
 ```
 
-## Limitações Conhecidas
+## Code Architecture
 
-1. **Sem otimizações**: O código gerado é funcional mas não otimizado
-2. **Registradores limitados**: Usa principalmente %eax e %ebx
-3. **Sem verificação de tipos**: Assume que verificações semânticas já foram feitas
-4. **Assembly x86-32**: Focado em arquitetura 32-bit
-5. **Sistema de chamadas Linux**: Usa convenções do Linux para syscalls
+### AssemblyGenerator Functions
 
-## Arquitetura do Código
+- **generateASM()**: Main function that processes TAC list
+- **processInstruction()**: Handles specific TAC instruction types
+- **Helper functions**: Utility functions for allocation and manipulation
+- **Type detection**: Identifies real vs integer variables for proper handling
 
-### Classe AssemblyGenerator
-- **Construtor**: Inicializa com stream de saída
-- **generateAssembly()**: Função principal que processa lista de TACs
-- **handle*()**: Funções específicas para cada tipo de TAC
-- **Utilities**: Funções auxiliares para alocação e manipulação
+## File Structure
 
-### Fluxo de Geração
-1. **Coleta informações**: Percorre TACs para identificar vetores
-2. **Seção .data**: Gera strings de formato e literais
-3. **Seção .text**: Gera código de inicialização
-4. **Processamento TACs**: Converte cada TAC em assembly
-5. **Finalização**: Fecha arquivo e reporta sucesso
-
-## Testes
-
-Para validar o gerador, teste com:
-- Programas simples (variáveis, prints, retornos)
-- Operações aritméticas e lógicas
-- Estruturas de controle (if, while, do-while)
-- Funções com parâmetros e retorno
-- Vetores com inicialização e acesso
-- Programas complexos como `etapa6.txt`
-
-## Integração
-
-O gerador de assembly está totalmente integrado ao fluxo do compilador:
-1. Análise léxica e sintática
-2. Construção da AST
-3. Verificações semânticas
-4. Geração de TACs
-5. **Geração de Assembly** ← Nova etapa
-6. Saída do código assembly executável
-
-A geração de assembly é chamada automaticamente após a geração bem-sucedida das TACs.
+- `scanner.l`: Lexical analyzer specification
+- `parser.ypp`: Syntactic analyzer grammar
+- `ast.hpp` and `ast.cpp`: Abstract Syntax Tree implementation
+- `symbol.hpp` and `symbol.cpp`: Symbol table management
+- `verifications.hpp` and `verifications.cpp`: Semantic analysis implementation
+- `tac.hpp` and `tac.cpp`: Three Address Code generation implementation
+- `asm.hpp` and `asm.cpp`: Assembly code generation implementation
+- `main.cpp`: Program entry point
+- `Makefile`: Compilation instructions
+- `spect6.pdf`: PDF with the specification of this stage, in portuguese

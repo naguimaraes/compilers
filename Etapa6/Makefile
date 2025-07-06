@@ -32,14 +32,18 @@ debug: target
 target: $(PROJECT)
 
 .PHONY:
-run: $(PROJECT)
-	@mkdir -p output
-	./$(PROJECT) $(PROJECT).2025++1 output/$(PROJECT)_symbol_table.txt output/$(PROJECT)_AST.txt output/$(PROJECT)_decompiled.txt output/$(PROJECT)_TAC.txt output/$(PROJECT).s
 
-test: $(PROJECT)
-	@./$(PROJECT) $(PROJECT).txt $(PROJECT)_recompiled.txt 
-	@./$(PROJECT) $(PROJECT)_recompiled.txt  $(PROJECT)_recompiled_recompiled.txt 
-	@diff $(PROJECT)_recompiled.txt $(PROJECT)_recompiled_recompiled.txt > /dev/null && echo "\n2 times recompiled code is equal to 1 time recompiled code." || echo "\nRecompiling failed."
+assemble: $(PROJECT)
+	@mkdir -p output
+	@./$(PROJECT) $(PROJECT).2025++1 output/$(PROJECT)_symbol_table.txt output/$(PROJECT)_AST.txt output/$(PROJECT)_decompiled.txt output/$(PROJECT)_TAC.txt output/$(PROJECT).s
+	@echo "Compilation finished."
+	@echo "\nGenerating binary code:"
+	gcc -m32 -no-pie -Wl,-z,noexecstack output/$(PROJECT).s -o output/$(PROJECT).out
+	@echo "- Binary code saved at output/$(PROJECT).out"
+
+run: assemble
+	@echo "\nRunning the program:"
+	@./output/$(PROJECT).out
 
 OBJS = lex.yy.o parser.tab.o ast.o symbol.o verifications.o tac.o asm.o main.o
 $(PROJECT): $(OBJS)
