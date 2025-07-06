@@ -24,7 +24,7 @@ string tokenName(int token);
 int main(int argc, char **argv){
     if (argc < 7){
         fprintf(stderr, "Arguments missing.\n");
-        fprintf(stderr, "Call: ./etapa6 [input file] [output symbol table] [output AST] [decompiled input file] [output TAC] [output assembly]\n");
+        fprintf(stderr, "Call: ./etapa6 <input_file> <symbol_table_output> <ast_output> <decompiled_output> <tac_output> <assembly_output>\n");
         exit(1); // Exit code 1 for missing arguments
     }
     

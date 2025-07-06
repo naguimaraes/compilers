@@ -11,6 +11,77 @@ This stage implements x86 assembly code generation from TAC (Three-Address Code)
 - `main.cpp` - Main program integrated with assembly generation
 - `Makefile` - Updated to include assembly generator compilation
 
+## How to Use
+
+### Compilation
+
+To compile the project, run:
+
+```bash
+make
+```
+
+or
+
+```bash
+make etapa6
+```
+
+To compile both the project and the assembly code generated, run:
+
+```bash
+make assemble
+```
+
+To easily run the compiler and generate assembly code, you can use:
+
+```bash
+make run
+```
+
+When running with `make run` or `make assemble`, it will compile all the source codes and generate in the `output/` directory all the intermediate data structures involved in the compilation process:
+
+- Symbol table in `output/etapa6_symbol_table.txt`
+- AST structure in `output/etapa6_AST.txt`
+- Decompiled code from AST in `output/etapa6_decompiled.txt`
+- TAC instructions in `output/etapa6_TAC.txt`
+- Generated assembly file in `output/etapa6.s`
+- Executable file in `output/etapa6.out` (if compiled with `gcc`)
+
+### Execution
+
+```bash
+./etapa6 <input_file> <symbol_table_output> <ast_output> <decompiled_output> <tac_output> <assembly_output>
+```
+
+**Parameters:**
+
+- `input_file`: Source file in 2025++1 language
+- `symbol_table_output`: Symbol table output file
+- `ast_output`: AST structure output file
+- `decompiled_output`: Decompiled code from AST
+- `tac_output`: TAC instructions output file
+- `assembly_output`: Generated assembly file
+
+### Usage Example
+
+```bash
+# Compile complete example
+./etapa6 etapa6.2025++1 output/etapa6_symbol_table.txt output/etapa6_AST.txt output/etapa6_decompiled.txt output/etapa6_TAC.txt output/etapa6.s
+
+# Compile assembly to executable
+gcc -m32 output/etapa6.s -o output/etapa6.out
+```
+
+## Code Architecture
+
+### AssemblyGenerator Functions
+
+- **generateASM()**: Main function that processes TAC list
+- **processInstruction()**: Handles specific TAC instruction types
+- **Helper functions**: Utility functions for allocation and manipulation
+- **Type detection**: Identifies real vs integer variables for proper handling
+
 ## Implemented Features
 
 ### Supported TAC Types
@@ -119,62 +190,6 @@ main:
     ret
 ```
 
-## How to Use
-
-### Compilation
-
-To compile the project, run:
-
-```bash
-make
-```
-
-To compile both the project and the assembly code generated, run:
-
-```bash
-make assemble
-```
-
-To easily run the compiler and generate assembly code, you can use:
-
-```bash
-make run
-```
-
-### Execution
-
-```bash
-./etapa6 [input_file] [symbol_table_output] [ast_output] [decompiled_output] [tac_output] [assembly_output]
-```
-
-**Parameters:**
-
-- `input_file`: Source file in 2025++1 language
-- `symbol_table_output`: Symbol table output file
-- `ast_output`: AST structure output file
-- `decompiled_output`: Decompiled code from AST
-- `tac_output`: TAC instructions output file
-- `assembly_output`: Generated assembly file
-
-### Usage Example
-
-```bash
-# Compile complete example
-./etapa6 etapa6.2025++1 output/etapa6_symbol_table.txt output/etapa6_AST.txt output/etapa6_decompiled.txt output/etapa6_TAC.txt output/etapa6.s
-
-# Compile assembly to executable
-gcc -m32 output/etapa6.s -o output/etapa6.out
-```
-
-## Code Architecture
-
-### AssemblyGenerator Functions
-
-- **generateASM()**: Main function that processes TAC list
-- **processInstruction()**: Handles specific TAC instruction types
-- **Helper functions**: Utility functions for allocation and manipulation
-- **Type detection**: Identifies real vs integer variables for proper handling
-
 ## File Structure
 
 - `scanner.l`: Lexical analyzer specification
@@ -187,3 +202,4 @@ gcc -m32 output/etapa6.s -o output/etapa6.out
 - `main.cpp`: Program entry point
 - `Makefile`: Compilation instructions
 - `spect6.pdf`: PDF with the specification of this stage, in portuguese
+- `etapa6.2025++1`: Sample input file with 2025++1 source code
