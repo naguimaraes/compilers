@@ -44,11 +44,11 @@ Os códigos de teste estão localizados no diretório `tests/`. O código em Ass
 
 ### Teste 1: Entrada/Saída no Arquivo `tests/io.2025++1`
 
-O código é um exemplo simples de entrada e saída, onde o programa fica constantemente lendo um número do usuário através do comando `read` e imprimindo este número na tela com o comando `print`, até que o usuário digite `4` para sair do loop. Para testar a leitura e escrita de valores `real`, como não há suporte a controle de fluxo para este tipo, o programa apenas lê um valor e o imprime na tela. A execução se deu como:
+O código é um exemplo simples de entrada e saída, onde o programa fica constantemente lendo um número do usuário através do comando `read` e imprimindo este número na tela com o comando `print`, até que o usuário digite `4` para sair do loop. A execução se deu como:
 
 ```bash
-nathan@nathan-casa:~/Documents/compilers/Etapa6$ make test FILE=tests/io.2025++1 
-The file had 22 lines in total.
+nathan@626679:~/Documents/compilers/Etapa6$ make test FILE=tests/io.2025++1 
+The file had 15 lines in total.
 - Symbol table saved to file "output/io_symbol_table.txt".
 - AST structure saved to file "output/io_AST.txt".
 - Decompiled code saved to file "output/io_decompiled.txt".
@@ -61,29 +61,27 @@ Generating binary code:
 
 Running the program:
 Entering an infinite loop to read integers, please enter 4 to exit: 
+Enter an integer: 0
+Read value: 0
 Enter an integer: 1
 Read value: 1
-Enter an integer: 2
-Read value: 2
-Enter an integer: 3
-Read value: 3
+Enter an integer: -3
+Read value: -3
+Enter an integer: 7
+Read value: 7
 Enter an integer: 4
 Read value: 4
-Exited the loop.
-
-Enter a real number: 0.77
-Read value: 0.77
 Exited the loop.
 - Test completed successfully for io.
 ```
 
 ### Teste 2: Operações Lógicas e Controle de Fluxo no Arquivo `tests/logic.2025++1`
 
-O código é um exemplo de operações lógicas com números inteiros, onde o programa imprime o resultado de algumas operações lógicas (AND, OR, NOT) entre eles e também utiliza estruturas de controle de fluxo (if, while) com operações de comparação (LE, GE, etc.). A execução se deu como:
+O código é um exemplo de operações lógicas com números inteiros e booleanos, onde o programa imprime o resultado de algumas operações lógicas (AND, OR, NOT) entre eles e também utiliza estruturas de controle de fluxo (if, while) com operações de comparação (LE, GE, etc.). A execução se deu como:
 
 ```bash
-nathan@nathan-casa:~/Documents/compilers/Etapa6$ make test FILE=tests/logic.2025++1 
-The file had 74 lines in total.
+nathan@626679:~/Documents/compilers/Etapa6$ make test FILE=tests/logic.2025++1 
+The file had 82 lines in total.
 - Symbol table saved to file "output/logic_symbol_table.txt".
 - AST structure saved to file "output/logic_AST.txt".
 - Decompiled code saved to file "output/logic_decompiled.txt".
@@ -95,20 +93,42 @@ Generating binary code:
 - Binary code saved at output/logic.out
 
 Running the program:
-Testando operações lógicas em estruturas de controle:
-a > b é verdadeiro
-a <= b é falso
-a >= b é verdadeiro
-ambos a e b são positivos
-a > 10 E b > 0
-a > 10 OU b > 0 é verdadeiro
-nenhum é negativo
-Contando com MOD:
-0 é par
-1 é ímpar
-2 é par
-3 é ímpar
-4 é par
+Enter a value for x: -2
+Enter a value for y: 7
+Enter a value for counter: 3
+
+Comparison Tests:
+x > y: FALSE
+x < y: TRUE
+x >= y: FALSE
+x <= y: TRUE
+x == y: FALSE
+x != y: TRUE
+
+Logical Tests:
+Both positive: FALSE
+At least one positive: TRUE
+Both negative: FALSE
+
+MOD Tests:
+x is even
+y not divisible by 3
+
+Loop tests should repeat 3 times.
+While-Do Test:
+Counter: 3
+Counter: 2
+Counter: 1
+
+Do-While Test:
+Counter: 3
+Counter: 2
+Counter: 1
+
+Nested Conditions:
+x <= 5 BUT y < 10
+
+If Without Else Test:
 - Test completed successfully for logic.
 ```
 

@@ -300,7 +300,7 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
         const std::vector<std::string>& values = vec.second;
         
         emitComment("Vector " + vecName + " initialization");
-        emitLabel(vecName + ":");
+        emitLabel("\t" + vecName + ":");
         
         for (const std::string& value : values) {
             std::string processedValue = value;
@@ -320,7 +320,7 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 processedValue = std::to_string(octalValue);
             }
             
-            emitInstruction(".long " + processedValue);
+            emitInstruction("\t.long " + processedValue);
         }
         
         // Update varLocations to point to global vector
@@ -986,17 +986,11 @@ void processInstruction(TAC* current) {
                 emitComment("Vector write: " + vecName + "[" + index + "] = " + value);
                 std::string vecLoc = getOperandLocation(current->getRes());
                 
-                if (index[0] == '$') {
-                    emitInstruction("movl " + index + ", %eax");
-                } else {
-                    emitInstruction("movl " + index + ", %eax");
-                }
+                // Load index using PIE-compatible method
+                loadOperandToRegister(index, "%eax");
                 emitInstruction("imull $4, %eax"); // 4 bytes per element for int values
-                if (value[0] == '$') {
-                    emitInstruction("movl " + value + ", %ebx");
-                } else {
-                    emitInstruction("movl " + value + ", %ebx");
-                }
+                // Load value using PIE-compatible method
+                loadOperandToRegister(value, "%ebx");
                 
                 // For global vectors, use PIE-compatible addressing
                 if (vecLoc.find("(%rbp)") == std::string::npos) {

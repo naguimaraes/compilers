@@ -1,0 +1,36 @@
++-----------------------------------------------------------------+
+|          SYMBOL TABLE MADE BY NATHAN GUIMARAES (334437)         |
++--------------------------------+--------------------------------+
+| TYPE                           | LEXEME                         |
++--------------------------------+--------------------------------+
+| LIT_STRING                     | " "                            |
+| LIT_STRING                     | ", Min: "                      |
+| LIT_STRING                     | "Calculating sum...\n"         |
+| LIT_STRING                     | "Creating doubled vector...\n" |
+| LIT_STRING                     | "Doubled vector: "             |
+| LIT_STRING                     | "Finding max and min...\n"     |
+| LIT_STRING                     | "Max: "                        |
+| LIT_STRING                     | "Original vector: "            |
+| LIT_STRING                     | "Reverse order: "              |
+| LIT_STRING                     | "Sum: "                        |
+| LIT_STRING                     | "\n"                           |
+| LIT_INT                        | 0                              |
+| LIT_INT                        | 0000000000001                  |
+| LIT_INT                        | 1                              |
+| LIT_INT                        | 10                             |
+| LIT_INT                        | 2                              |
+| LIT_INT                        | 3                              |
+| LIT_INT                        | 4                              |
+| LIT_INT                        | 5                              |
+| LIT_INT                        | 6                              |
+| LIT_INT                        | 7                              |
+| LIT_INT                        | 8                              |
+| LIT_INT                        | 9                              |
+| TK_IDENTIFIER                  | i                              |
+| TK_IDENTIFIER                  | main                           |
+| TK_IDENTIFIER                  | max                            |
+| TK_IDENTIFIER                  | min                            |
+| TK_IDENTIFIER                  | result                         |
+| TK_IDENTIFIER                  | sum                            |
+| TK_IDENTIFIER                  | vector                         |
++--------------------------------+--------------------------------+

@@ -1,0 +1,133 @@
++-------------------------------------------------------+
+|       TAC LIST MADE BY NATHAN GUIMARAES (334437)      |
++-------------+-------------+-------------+-------------+
+| OPERATION   | RESULT      | OPERAND1    | OPERAND2    |
++-------------+-------------+-------------+-------------+
+| BEGINVEC    |             | vector      | 10          |
+| VECWRITE    | vector      | 0           | 00000000... |
+| VECWRITE    | vector      | 1           | 2           |
+| VECWRITE    | vector      | 2           | 3           |
+| VECWRITE    | vector      | 3           | 4           |
+| VECWRITE    | vector      | 4           | 5           |
+| VECWRITE    | vector      | 5           | 6           |
+| VECWRITE    | vector      | 6           | 7           |
+| VECWRITE    | vector      | 7           | 8           |
+| VECWRITE    | vector      | 8           | 9           |
+| VECWRITE    | vector      | 9           | 10          |
+| ENDVEC      |             | vector      |             |
+| BEGINVEC    |             | result      | 10          |
+| VECWRITE    | result      | 0           | 0           |
+| VECWRITE    | result      | 1           | 0           |
+| VECWRITE    | result      | 2           | 0           |
+| VECWRITE    | result      | 3           | 0           |
+| VECWRITE    | result      | 4           | 0           |
+| VECWRITE    | result      | 5           | 0           |
+| VECWRITE    | result      | 6           | 0           |
+| VECWRITE    | result      | 7           | 0           |
+| VECWRITE    | result      | 8           | 0           |
+| VECWRITE    | result      | 9           | 0           |
+| ENDVEC      |             | result      |             |
+| INIT        | i           | 0           |             |
+| INIT        | sum         | 0           |             |
+| INIT        | max         | 0           |             |
+| INIT        | min         | 0           |             |
+| BEGINFUN    |             | main        |             |
+| PRINT       |             | "Origina... |             |
+| LABEL       |             | __label0    |             |
+| LT          | __temp0     | i           | 10          |
+| IFZ         |             | __temp0     | __label1    |
+| VECREAD     | __temp1     | vector      | i           |
+| PRINT       |             | __temp1     |             |
+| PRINT       |             | " "         |             |
+| ADD         | __temp2     | i           | 1           |
+| MOVE        | i           | __temp2     |             |
+| JUMP        |             | __label0    |             |
+| LABEL       |             | __label1    |             |
+| PRINT       |             | "\n"        |             |
+| PRINT       |             | "Calcula... |             |
+| MOVE        | i           | 0           |             |
+| MOVE        | sum         | 0           |             |
+| LABEL       |             | __label2    |             |
+| LT          | __temp3     | i           | 10          |
+| IFZ         |             | __temp3     | __label3    |
+| VECREAD     | __temp4     | vector      | i           |
+| ADD         | __temp5     | sum         | __temp4     |
+| MOVE        | sum         | __temp5     |             |
+| ADD         | __temp6     | i           | 1           |
+| MOVE        | i           | __temp6     |             |
+| JUMP        |             | __label2    |             |
+| LABEL       |             | __label3    |             |
+| PRINT       |             | "Sum: "     |             |
+| PRINT       |             | sum         |             |
+| PRINT       |             | "\n"        |             |
+| PRINT       |             | "Finding... |             |
+| MOVE        | i           | 0           |             |
+| VECREAD     | __temp7     | vector      | 0           |
+| MOVE        | max         | __temp7     |             |
+| VECREAD     | __temp8     | vector      | 0           |
+| MOVE        | min         | __temp8     |             |
+| LABEL       |             | __label4    |             |
+| LT          | __temp9     | i           | 10          |
+| IFZ         |             | __temp9     | __label5    |
+| VECREAD     | __temp10    | vector      | i           |
+| GT          | __temp11    | __temp10    | max         |
+| IFZ         |             | __temp11    | __label6    |
+| VECREAD     | __temp12    | vector      | i           |
+| MOVE        | max         | __temp12    |             |
+| LABEL       |             | __label6    |             |
+| VECREAD     | __temp13    | vector      | i           |
+| LT          | __temp14    | __temp13    | min         |
+| IFZ         |             | __temp14    | __label8    |
+| VECREAD     | __temp15    | vector      | i           |
+| MOVE        | min         | __temp15    |             |
+| LABEL       |             | __label8    |             |
+| ADD         | __temp16    | i           | 1           |
+| MOVE        | i           | __temp16    |             |
+| JUMP        |             | __label4    |             |
+| LABEL       |             | __label5    |             |
+| PRINT       |             | "Max: "     |             |
+| PRINT       |             | max         |             |
+| PRINT       |             | ", Min: "   |             |
+| PRINT       |             | min         |             |
+| PRINT       |             | "\n"        |             |
+| PRINT       |             | "Creatin... |             |
+| MOVE        | i           | 0           |             |
+| LABEL       |             | __label10   |             |
+| LT          | __temp17    | i           | 10          |
+| IFZ         |             | __temp17    | __label11   |
+| VECREAD     | __temp18    | vector      | i           |
+| MUL         | __temp19    | __temp18    | 2           |
+| VECWRITE    | result      | i           | __temp19    |
+| ADD         | __temp20    | i           | 1           |
+| MOVE        | i           | __temp20    |             |
+| JUMP        |             | __label10   |             |
+| LABEL       |             | __label11   |             |
+| PRINT       |             | "Doubled... |             |
+| MOVE        | i           | 0           |             |
+| LABEL       |             | __label12   |             |
+| LT          | __temp21    | i           | 10          |
+| IFZ         |             | __temp21    | __label13   |
+| VECREAD     | __temp22    | result      | i           |
+| PRINT       |             | __temp22    |             |
+| PRINT       |             | " "         |             |
+| ADD         | __temp23    | i           | 1           |
+| MOVE        | i           | __temp23    |             |
+| JUMP        |             | __label12   |             |
+| LABEL       |             | __label13   |             |
+| PRINT       |             | "\n"        |             |
+| PRINT       |             | "Reverse... |             |
+| MOVE        | i           | 9           |             |
+| LABEL       |             | __label14   |             |
+| GE          | __temp24    | i           | 0           |
+| IFZ         |             | __temp24    | __label15   |
+| VECREAD     | __temp25    | vector      | i           |
+| PRINT       |             | __temp25    |             |
+| PRINT       |             | " "         |             |
+| SUB         | __temp26    | i           | 1           |
+| MOVE        | i           | __temp26    |             |
+| JUMP        |             | __label14   |             |
+| LABEL       |             | __label15   |             |
+| PRINT       |             | "\n"        |             |
+| RET         |             | 0           |             |
+| ENDFUN      |             | main        |             |
++-------------+-------------+-------------+-------------+
