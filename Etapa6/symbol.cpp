@@ -54,10 +54,7 @@ void Symbol::setLineNumber(int lineNumber) {
 }
 
 Symbol *insertSymbol(string lex, int type, int lineNumber) {
-
     if (symbolTable.find(lex) == symbolTable.end()) {
-
-        // Determine data type and identifier type based on token type
         dataType dataTypeVal = dataType::UNDEFINED;
         identifierType identifierTypeVal = identifierType::UNDEFINED;
         
@@ -91,10 +88,8 @@ Symbol *insertSymbol(string lex, int type, int lineNumber) {
 
         Symbol *s = new Symbol(lex, type, dataTypeVal, identifierTypeVal, lineNumber);
         symbolTable[lex] = s;
-
         return s;
-    }
-    else{
+    } else {
         return symbolTable.find(lex)->second;
     }
 }
@@ -108,32 +103,27 @@ Symbol *getSymbol(string lex) {
 }
 
 string invertNumberInt(string number){
-        
     string invertedNum(number.size(), '\0');
-
     for(unsigned long i = 0; i < number.size(); i++){
         invertedNum[i] = number[number.size() - i - 1];
     }
-
     return invertedNum;
 }
 
 string removeZeros(string number) {
     size_t firstNonZero = number.find_first_not_of('0');
     if (firstNonZero == string::npos) {
-        return "0"; // All zeros case
+        return "0";
     }
     return number.substr(firstNonZero);
 }
 
 string invertNumberReal(string number){
     unsigned long i = 0;
-
     while(number[i] != '/'){
         i++;
     }
-
-    return invertNumberInt(number.substr(0, i)) + "/" + invertNumberInt(number.substr(i + 1, number.size() - i - 1));        
+    return invertNumberInt(number.substr(0, i)) + "/" + invertNumberInt(number.substr(i + 1, number.size() - i - 1));
 }
 
 string tokenName(int token){

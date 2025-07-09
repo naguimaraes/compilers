@@ -8,7 +8,6 @@
 #include <iomanip>
 #include <fstream>
 
-// Forward declarations for internal functions
 TAC* tacCreate(TACType type, Symbol* res = nullptr, Symbol* op1 = nullptr, Symbol* op2 = nullptr);
 TAC* tacJoin(TAC* tac1, TAC* tac2);
 TAC* tacReverse(TAC* tac);
@@ -19,7 +18,6 @@ Symbol* getResultSymbol(TAC* tacSequence, ASTNode* node);
 std::string truncateString(const std::string& str, size_t maxWidth);
 std::string tacTypeToString(TACType type);
 
-// Code generation functions - internal use only
 TAC* generateBinaryOp(ASTNode* node);
 TAC* generateUnaryOp(ASTNode* node);
 TAC* generateAssignment(ASTNode* node);
@@ -37,17 +35,14 @@ TAC* generateRead(ASTNode* node);
 TAC* generateVectorAccess(ASTNode* node);
 TAC* generateVectorAssignment(ASTNode* node);
 
-// Global counters for temporary variables and labels
 static int tempCounter = 0;
 static int labelCounter = 0;
 
-// TAC class implementation
 TAC::TAC(TACType type, Symbol* res, Symbol* op1, Symbol* op2) 
     : type(type), result(res), operand1(op1), operand2(op2), previous(nullptr), next(nullptr) {
 }
 
 TAC::~TAC() {
-    // Don't delete symbols as they are managed by the symbol table
 }
 
 TACType TAC::getType() const {
@@ -82,13 +77,11 @@ void TAC::setNext(TAC* next) {
     this->next = next;
 }
 
-// Helper function to truncate strings that are too long for table columns
 std::string truncateString(const std::string& str, size_t maxWidth) {
     if (str.length() <= maxWidth) {
         return str;
     }
     
-    // If it's too long, truncate and add "..." if there's space
     if (maxWidth <= 3) {
         return str.substr(0, maxWidth);
     } else {
@@ -97,24 +90,20 @@ std::string truncateString(const std::string& str, size_t maxWidth) {
 }
 
 void TAC::print() const {
-    // Don't print SYMBOL as they are utility instructions
     if (type == TACType::SYMBOL) {
         return;
     }
     
-    // Get strings and truncate if necessary
     std::string typeStr = tacTypeToString(type);
     std::string resStr = result ? result->getLexeme() : "";
     std::string op1Str = operand1 ? operand1->getLexeme() : "";
     std::string op2Str = operand2 ? operand2->getLexeme() : "";
     
-    // Truncate strings to fit in 12-character columns
-    typeStr = truncateString(typeStr, 11); // 11 to leave space for proper alignment
+    typeStr = truncateString(typeStr, 11);
     resStr = truncateString(resStr, 11);
     op1Str = truncateString(op1Str, 11);
     op2Str = truncateString(op2Str, 11);
     
-    // Print in table format with fixed-width columns
     std::cout << "| " << std::left << std::setw(12) << typeStr;
     std::cout << "| " << std::setw(12) << resStr;
     std::cout << "| " << std::setw(12) << op1Str;
@@ -131,13 +120,11 @@ TAC* tacJoin(TAC* tac1, TAC* tac2) {
     if (!tac1) return tac2;
     if (!tac2) return tac1;
     
-    // Find the last instruction in tac1 by going forward
     TAC* last = tac1;
     while (last->getNext()) {
         last = last->getNext();
     }
     
-    // Connect tac1 and tac2
     last->setNext(tac2);
     if (tac2) {
         tac2->setPrev(last);
@@ -152,12 +139,10 @@ TAC* tacReverse(TAC* tac) {
     TAC* current = tac;
     TAC* newHead = nullptr;
     
-    // Find the beginning of the list (last instruction in inverted list)
     while (current->getPrev()) {
         current = current->getPrev();
     }
     
-    // Reverse the list
     while (current) {
         TAC* next = current->getNext();
         current->setNext(current->getPrev());
@@ -172,7 +157,6 @@ TAC* tacReverse(TAC* tac) {
 void printTAC(TAC* tac) {
     if (!tac) return;
 
-    // Print table header
     std::cout << "+-------------------------------------------------------+" << std::endl;
     std::cout << "|       TAC list made by Nathan Guimaraes (334437)      |" << std::endl;
     std::cout << "+-------------+-------------+-------------+-------------+" << std::endl;
@@ -190,7 +174,6 @@ void printTAC(TAC* tac) {
         current = current->getPrev();
     }
     
-    // Print table footer
     std::cout << "+-------------+-------------+-------------+-------------+" << std::endl;
 }
 
@@ -203,7 +186,6 @@ void printTACToFile(const std::string& filename, TAC* tac) {
         return;
     }
     
-    // Print table header
     outFile << "+-------------------------------------------------------+" << std::endl;
     outFile << "|       TAC LIST MADE BY NATHAN GUIMARAES (334437)      |" << std::endl;
     outFile << "+-------------+-------------+-------------+-------------+" << std::endl;
@@ -241,7 +223,6 @@ void printTACToFile(const std::string& filename, TAC* tac) {
         current = current->getNext();
     }
     
-    // Print table footer
     outFile << "+-------------+-------------+-------------+-------------+" << std::endl;
     
     outFile.close();
@@ -387,10 +368,10 @@ dataType inferDataType(Symbol* leftOperand, Symbol* rightOperand = nullptr) {
     return dataType::INT;
 }
 
-// Helper function to infer data type for comparison operations (always return INT for boolean results)
-dataType inferComparisonDataType(Symbol* leftOperand, Symbol* rightOperand = nullptr) {
-    // Comparison operations always return boolean (represented as INT in our system)
-    return dataType::INT;
+// Helper function to infer data type for comparison operations (always return BOOLEAN for boolean results)
+dataType inferComparisonDataType(Symbol* /* leftOperand */, Symbol* /* rightOperand */ = nullptr) {
+    // Comparison operations always return boolean
+    return dataType::BOOLEAN;
 }
 
 // Main code generation function
@@ -399,16 +380,12 @@ TAC* generateTAC(ASTNode* node) {
     
     switch (node->getType()) {
         case ASTNodeType::SYMBOL:
-            // For symbols, we don't generate TAC, just return nullptr
-            // The symbol will be used directly by parent operations
-            return nullptr;
-            
         case ASTNodeType::LITERAL:
         case ASTNodeType::BYTE:
         case ASTNodeType::INT:
         case ASTNodeType::REAL:
         case ASTNodeType::CHAR:
-            // For literals, we don't generate TAC, just return nullptr
+            // For symbols and literals, we don't generate TAC, just return nullptr
             // The symbol will be used directly by parent operations
             return nullptr;
             

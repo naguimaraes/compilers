@@ -5,4 +5,5 @@
 #include "symbol.hpp"
 #include <set>
 
+// Public interface function
 int semanticVerification(ASTNode* root);
