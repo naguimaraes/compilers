@@ -53,6 +53,7 @@
 %token<symbol> LIT_STRING
 
 %token TOKEN_ERROR
+%token INTERNAL
 
 %type<ast> program
 %type<ast> global_declaration_list

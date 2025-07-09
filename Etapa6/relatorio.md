@@ -38,7 +38,7 @@ Sendo o arquivo `asm.cpp` o mais demorado a se compilar. Note a compilação de 
 
 ## Testes do Projeto
 
-Os testes foram automatizados utilizando o comando `make test`. O comando roda o executável `etapa6` (compilado com o comando anterior `make`) com um dado programa de teste e gera, no diretório `output/`, arquivos de texto com as estruturas intermediárias (AST, Tabela de Símbolos, TAC e Código Assembly) geradas ao longo do processo de compilação. Após isso, o comando compila o código Assembly gerado e executa o programa. O comando `make test` executa apenas um teste por vez.
+Os testes foram automatizados utilizando o comando `make test`. O comando roda o executável `etapa6` (compilado com o comando anterior `make`) com um dado programa de teste e gera, no diretório `output/`, arquivos de texto detalhados com as estruturas intermediárias (AST, Tabela de Símbolos, TAC e Código Assembly) geradas ao longo do processo de compilação. Após isso, o comando compila o código Assembly gerado e executa o programa. O comando `make test` executa apenas um teste por vez.
 
 Os códigos de teste estão localizados no diretório `tests/`. O código em Assembly é compilado com o comando `gcc -o output/<nome_do_arquivo>.out output/<nome_do_arquivo>.s`.
 

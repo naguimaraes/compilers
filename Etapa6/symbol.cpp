@@ -57,7 +57,39 @@ Symbol *insertSymbol(string lex, int type, int lineNumber) {
 
     if (symbolTable.find(lex) == symbolTable.end()) {
 
-        Symbol *s = new Symbol(lex, type, dataType::UNDEFINED, identifierType::UNDEFINED, lineNumber);
+        // Determine data type and identifier type based on token type
+        dataType dataTypeVal = dataType::UNDEFINED;
+        identifierType identifierTypeVal = identifierType::UNDEFINED;
+        
+        switch (type) {
+            case LIT_INT:
+                dataTypeVal = dataType::INT;
+                identifierTypeVal = identifierType::SCALAR;
+                break;
+            case LIT_REAL:
+                dataTypeVal = dataType::REAL;
+                identifierTypeVal = identifierType::SCALAR;
+                break;
+            case LIT_CHAR:
+                dataTypeVal = dataType::CHAR;
+                identifierTypeVal = identifierType::SCALAR;
+                break;
+            case LIT_STRING:
+                dataTypeVal = dataType::STRING;
+                identifierTypeVal = identifierType::LITERAL;
+                break;
+            case TK_IDENTIFIER:
+                // For identifiers, type will be determined later during semantic analysis
+                dataTypeVal = dataType::UNDEFINED;
+                identifierTypeVal = identifierType::UNDEFINED;
+                break;
+            default:
+                dataTypeVal = dataType::UNDEFINED;
+                identifierTypeVal = identifierType::UNDEFINED;
+                break;
+        }
+
+        Symbol *s = new Symbol(lex, type, dataTypeVal, identifierTypeVal, lineNumber);
         symbolTable[lex] = s;
 
         return s;
@@ -147,6 +179,8 @@ string tokenName(int token){
         return "LIT_STRING";
     case TOKEN_ERROR:
         return "TOKEN_ERROR";
+    case INTERNAL:
+        return "INTERNAL";
     case '-':
     case ',':
     case ';':
@@ -174,17 +208,96 @@ string tokenName(int token){
     }
 }
 
-void printSymbolTable() {
-    std::cout << "+-----------------------------------------------------------------+\n";
-    std::cout << "|          Symbol Table made by Nathan Guimaraes (334437)         |\n";
-    std::cout << "+--------------------------------+--------------------------------+\n";
-    std::cout << "| " << std::left << std::setw(31) << "LEXEME";
-    std::cout << "| " << std::setw(31) << "TYPE";
-    std::cout << "|\n";
-    std::cout << "+--------------------------------+--------------------------------+\n";
-    for (auto &lex : symbolTable){
-        printf("Lex: %s, Type: %s\n", lex.first.c_str(), tokenName(lex.second->getType()).c_str());
+string dataTypeName(dataType type) {
+    switch (type) {
+        case dataType::BYTE:
+            return "BYTE";
+        case dataType::INT:
+            return "INT";
+        case dataType::REAL:
+            return "REAL";
+        case dataType::BOOLEAN:
+            return "BOOLEAN";
+        case dataType::CHAR:
+            return "CHAR";
+        case dataType::STRING:
+            return "STRING";
+        case dataType::VOID:
+            return "VOID";
+        case dataType::ADDRESS:
+            return "ADDRESS";
+        case dataType::UNDEFINED:
+            return "UNDEFINED";
+        default:
+            return "UNKNOWN";
     }
+}
+
+string identifierTypeName(identifierType type) {
+    switch (type) {
+        case identifierType::VARIABLE:
+            return "VARIABLE";
+        case identifierType::VECTOR:
+            return "VECTOR";
+        case identifierType::FUNCTION:
+            return "FUNCTION";
+        case identifierType::LITERAL:
+            return "LITERAL";
+        case identifierType::SCALAR:
+            return "SCALAR";
+        case identifierType::LABEL:
+            return "LABEL";
+        case identifierType::TEMP:
+            return "TEMP";
+        case identifierType::UNDEFINED:
+            return "UNDEFINED";
+        default:
+            return "UNKNOWN";
+    }
+}
+
+void printSymbolTable() {
+    std::cout << "+-------------------------------------------------------------------------------------------+\n";
+    std::cout << "|                     SYMBOL TABLE MADE BY NATHAN GUIMARAES (334437)                        |\n";
+    std::cout << "+--------------------+--------------------+--------------------+--------------------+-------+\n";
+    std::cout << "| " << std::left << std::setw(18) << "LEXEME";
+    std::cout << " | " << std::setw(18) << "TYPE";
+    std::cout << " | " << std::setw(18) << "DATA TYPE";
+    std::cout << " | " << std::setw(18) << "IDENTIFIER TYPE";
+    std::cout << " | " << std::setw(5) << "LINE";
+    std::cout << " |\n";
+    std::cout << "+--------------------+--------------------+--------------------+--------------------+-------+\n";
+    
+    for (auto &lex : symbolTable){
+        std::string lexeme = lex.first;
+        std::string type = tokenName(lex.second->getType());
+        std::string dataTypeStr = dataTypeName(lex.second->getDataType());
+        std::string identifierTypeStr = identifierTypeName(lex.second->getIdentifierType());
+        int lineNumber = lex.second->getLineNumber();
+        
+        // Truncate strings if they are too long (max 17 characters to fit in 18-char column)
+        if (lexeme.length() > 17) {
+            lexeme = lexeme.substr(0, 14) + "...";
+        }
+        if (type.length() > 17) {
+            type = type.substr(0, 14) + "...";
+        }
+        if (dataTypeStr.length() > 17) {
+            dataTypeStr = dataTypeStr.substr(0, 14) + "...";
+        }
+        if (identifierTypeStr.length() > 17) {
+            identifierTypeStr = identifierTypeStr.substr(0, 14) + "...";
+        }
+        
+        std::cout << "| " << std::left << std::setw(18) << lexeme;
+        std::cout << " | " << std::setw(18) << type;
+        std::cout << " | " << std::setw(18) << dataTypeStr;
+        std::cout << " | " << std::setw(18) << identifierTypeStr;
+        std::cout << " | " << std::setw(5) << lineNumber;
+        std::cout << " |\n";
+    }
+    
+    std::cout << "+--------------------+--------------------+--------------------+--------------------+-------+\n";
 }
 
 void printSymbolTableToFile(const string& filename) {
@@ -194,32 +307,47 @@ void printSymbolTableToFile(const string& filename) {
         return;
     }
 
-    outFile << "+-----------------------------------------------------------------+\n";
-    outFile << "|          SYMBOL TABLE MADE BY NATHAN GUIMARAES (334437)         |\n";
-    outFile << "+--------------------------------+--------------------------------+\n";
-    outFile << "| " << std::left << std::setw(31) << "TYPE";
-    outFile << "| " << std::setw(31) << "LEXEME";
-    outFile << "|\n";
-    outFile << "+--------------------------------+--------------------------------+\n";
+    outFile << "+-------------------------------------------------------------------------------------------+\n";
+    outFile << "|                     SYMBOL TABLE MADE BY NATHAN GUIMARAES (334437)                        |\n";
+    outFile << "+--------------------+--------------------+--------------------+--------------------+-------+\n";
+    outFile << "| " << std::left << std::setw(18) << "LEXEME";
+    outFile << " | " << std::setw(18) << "TYPE";
+    outFile << " | " << std::setw(18) << "DATA TYPE";
+    outFile << " | " << std::setw(18) << "IDENTIFIER TYPE";
+    outFile << " | " << std::setw(5) << "LINE";
+    outFile << " |\n";
+    outFile << "+--------------------+--------------------+--------------------+--------------------+-------+\n";
     
     for (auto &lex : symbolTable){
         std::string lexeme = lex.first;
         std::string type = tokenName(lex.second->getType());
+        std::string dataTypeStr = dataTypeName(lex.second->getDataType());
+        std::string identifierTypeStr = identifierTypeName(lex.second->getIdentifierType());
+        int lineNumber = lex.second->getLineNumber();
         
-        // Truncate strings if they are too long (max 30 characters to fit in 31-char column)
-        if (lexeme.length() > 30) {
-            lexeme = lexeme.substr(0, 27) + "...";
+        // Truncate strings if they are too long (max 17 characters to fit in 18-char column)
+        if (lexeme.length() > 17) {
+            lexeme = lexeme.substr(0, 14) + "...";
         }
-        if (type.length() > 30) {
-            type = type.substr(0, 27) + "...";
+        if (type.length() > 17) {
+            type = type.substr(0, 14) + "...";
+        }
+        if (dataTypeStr.length() > 17) {
+            dataTypeStr = dataTypeStr.substr(0, 14) + "...";
+        }
+        if (identifierTypeStr.length() > 17) {
+            identifierTypeStr = identifierTypeStr.substr(0, 14) + "...";
         }
         
-        outFile << "| " << std::left << std::setw(31) << type;
-        outFile << "| " << std::setw(31) << lexeme;
-        outFile << "|\n";
+        outFile << "| " << std::left << std::setw(18) << lexeme;
+        outFile << " | " << std::setw(18) << type;
+        outFile << " | " << std::setw(18) << dataTypeStr;
+        outFile << " | " << std::setw(18) << identifierTypeStr;
+        outFile << " | " << std::setw(5) << lineNumber;
+        outFile << " |\n";
     }
     
-    outFile << "+--------------------------------+--------------------------------+\n";
+    outFile << "+--------------------+--------------------+--------------------+--------------------+-------+\n";
     
     outFile.close();
 }

@@ -33,18 +33,10 @@ int main(int argc, char **argv){
         exit(2); // Exit code 2 for input file not found
     }
 
-    // Syntax analysis and AST and symbol table generation
+    // Syntax analysis and AST generation
     initMe();
     yyparse(); // Exit code 3 for syntax error
     fprintf(stderr,"The file had %d lines in total.\n", getLineNumber());
-    std::ofstream symbolFile(argv[2]);
-    if (!symbolFile.is_open()) {
-        fprintf(stderr, "File %s could not be opened for writing.\n", argv[2]);
-        exit(2); // Exit code 2 for file not found
-    }
-    symbolFile.close();
-    printSymbolTableToFile(argv[2]);
-    fprintf(stderr, "- Symbol table saved to file \"%s\".\n", argv[2]);
     
     // Save AST structure to file
     std::ofstream astFile(argv[3]);
@@ -87,6 +79,16 @@ int main(int argc, char **argv){
         tacFile.close();
         printTACToFile(argv[5], tacCode);
         fprintf(stderr, "- TAC list saved to file \"%s\".\n", argv[5]);
+        
+        // Save symbol table to file (after TAC generation)
+        std::ofstream symbolFile(argv[2]);
+        if (!symbolFile.is_open()) {
+            fprintf(stderr, "File %s could not be opened for writing.\n", argv[2]);
+            exit(2); // Exit code 2 for file not found
+        }
+        symbolFile.close();
+        printSymbolTableToFile(argv[2]);
+        fprintf(stderr, "- Symbol table saved to file \"%s\".\n", argv[2]);
         
         // Generate assembly code
         std::ofstream asmFile(argv[6]);

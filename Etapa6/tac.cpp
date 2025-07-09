@@ -13,7 +13,7 @@ TAC* tacCreate(TACType type, Symbol* res = nullptr, Symbol* op1 = nullptr, Symbo
 TAC* tacJoin(TAC* tac1, TAC* tac2);
 TAC* tacReverse(TAC* tac);
 void tacPrintBackwards(TAC* tac);
-Symbol* makeTemp();
+Symbol* makeTemp(dataType type);
 Symbol* makeLabel();
 Symbol* getResultSymbol(TAC* tacSequence, ASTNode* node);
 std::string truncateString(const std::string& str, size_t maxWidth);
@@ -335,16 +335,62 @@ Symbol* getResultSymbol(TAC* tacSequence, ASTNode* node) {
 }
 
 // Symbol creation functions
-Symbol* makeTemp() {
+Symbol* makeTemp(dataType type = dataType::INT) {
     std::stringstream ss;
     ss << "__temp" << tempCounter++;
-    return insertSymbol(ss.str(), 0, 1); // Using line number 1 as default
+    Symbol* temp = insertSymbol(ss.str(), INTERNAL, 1); // Using INTERNAL type and line number 1 as default
+    temp->setIdentifierType(identifierType::TEMP); // Set as TEMP for temporary variables
+    temp->setDataType(type); // Set the inferred data type
+    return temp;
 }
 
 Symbol* makeLabel() {
     std::stringstream ss;
     ss << "__label" << labelCounter++;
-    return insertSymbol(ss.str(), 0, 1); // Using line number 1 as default
+    Symbol* label = insertSymbol(ss.str(), INTERNAL, 1); // Using INTERNAL type and line number 1 as default
+    label->setIdentifierType(identifierType::LABEL); // Set as LABEL for labels
+    label->setDataType(dataType::ADDRESS); // Set as ADDRESS for labels
+    return label;
+}
+
+// Helper function to infer data type from operands
+dataType inferDataType(Symbol* leftOperand, Symbol* rightOperand = nullptr) {
+    if (!leftOperand) {
+        return dataType::INT; // Default to INT
+    }
+    
+    // If left operand has a defined type, use it
+    if (leftOperand->getDataType() != dataType::UNDEFINED) {
+        return leftOperand->getDataType();
+    }
+    
+    // If right operand exists and has a defined type, use it
+    if (rightOperand && rightOperand->getDataType() != dataType::UNDEFINED) {
+        return rightOperand->getDataType();
+    }
+    
+    // Check token types to infer
+    if (leftOperand->getType() == LIT_INT) {
+        return dataType::INT;
+    }
+    if (leftOperand->getType() == LIT_REAL) {
+        return dataType::REAL;
+    }
+    if (leftOperand->getType() == LIT_CHAR) {
+        return dataType::CHAR;
+    }
+    if (leftOperand->getType() == LIT_STRING) {
+        return dataType::STRING;
+    }
+    
+    // Default to INT for unknown types
+    return dataType::INT;
+}
+
+// Helper function to infer data type for comparison operations (always return INT for boolean results)
+dataType inferComparisonDataType(Symbol* leftOperand, Symbol* rightOperand = nullptr) {
+    // Comparison operations always return boolean (represented as INT in our system)
+    return dataType::INT;
 }
 
 // Main code generation function
@@ -451,32 +497,74 @@ TAC* generateBinaryOp(ASTNode* node) {
     TAC* leftCode = generateTAC(node->getChildren()[0]);
     TAC* rightCode = generateTAC(node->getChildren()[1]);
     
-    Symbol* temp = makeTemp();
-    Symbol* leftSymbol = nullptr;
-    Symbol* rightSymbol = nullptr;
-    
     // Extract symbols from child nodes or their generated code
-    leftSymbol = getResultSymbol(leftCode, node->getChildren()[0]);
-    rightSymbol = getResultSymbol(rightCode, node->getChildren()[1]);
+    Symbol* leftSymbol = getResultSymbol(leftCode, node->getChildren()[0]);
+    Symbol* rightSymbol = getResultSymbol(rightCode, node->getChildren()[1]);
     
+    // Infer data type for the temporary variable
+    dataType tempType;
     TACType tacType;
+    
     switch (node->getType()) {
-        case ASTNodeType::ADD: tacType = TACType::ADD; break;
-        case ASTNodeType::SUBTRACT: tacType = TACType::SUB; break;
-        case ASTNodeType::MULTIPLY: tacType = TACType::MUL; break;
-        case ASTNodeType::DIVIDE: tacType = TACType::DIV; break;
-        case ASTNodeType::MODULO: tacType = TACType::MOD; break;
-        case ASTNodeType::AND: tacType = TACType::AND; break;
-        case ASTNodeType::OR: tacType = TACType::OR; break;
-        case ASTNodeType::LESS_THAN: tacType = TACType::LT; break;
-        case ASTNodeType::GREATER_THAN: tacType = TACType::GT; break;
-        case ASTNodeType::LESS_EQUAL: tacType = TACType::LE; break;
-        case ASTNodeType::GREATER_EQUAL: tacType = TACType::GE; break;
-        case ASTNodeType::EQUAL: tacType = TACType::EQ; break;
-        case ASTNodeType::DIFFERENT: tacType = TACType::NE; break;
-        default: tacType = TACType::MOVE; break;
+        case ASTNodeType::ADD: 
+            tacType = TACType::ADD;
+            tempType = inferDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::SUBTRACT: 
+            tacType = TACType::SUB;
+            tempType = inferDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::MULTIPLY: 
+            tacType = TACType::MUL;
+            tempType = inferDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::DIVIDE: 
+            tacType = TACType::DIV;
+            tempType = inferDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::MODULO: 
+            tacType = TACType::MOD;
+            tempType = inferDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::AND: 
+            tacType = TACType::AND;
+            tempType = inferComparisonDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::OR: 
+            tacType = TACType::OR;
+            tempType = inferComparisonDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::LESS_THAN: 
+            tacType = TACType::LT;
+            tempType = inferComparisonDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::GREATER_THAN: 
+            tacType = TACType::GT;
+            tempType = inferComparisonDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::LESS_EQUAL: 
+            tacType = TACType::LE;
+            tempType = inferComparisonDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::GREATER_EQUAL: 
+            tacType = TACType::GE;
+            tempType = inferComparisonDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::EQUAL: 
+            tacType = TACType::EQ;
+            tempType = inferComparisonDataType(leftSymbol, rightSymbol);
+            break;
+        case ASTNodeType::DIFFERENT: 
+            tacType = TACType::NE;
+            tempType = inferComparisonDataType(leftSymbol, rightSymbol);
+            break;
+        default: 
+            tacType = TACType::MOVE;
+            tempType = inferDataType(leftSymbol, rightSymbol);
+            break;
     }
     
+    Symbol* temp = makeTemp(tempType);
     TAC* opTac = tacCreate(tacType, temp, leftSymbol, rightSymbol);
     
     TAC* result = tacJoin(leftCode, rightCode);
@@ -489,15 +577,23 @@ TAC* generateUnaryOp(ASTNode* node) {
     if (node->getChildren().empty()) return nullptr;
     
     TAC* operandCode = generateTAC(node->getChildren()[0]);
-    Symbol* temp = makeTemp();
     Symbol* operandSymbol = getResultSymbol(operandCode, node->getChildren()[0]);
     
     TACType tacType;
+    dataType tempType;
+    
     switch (node->getType()) {
-        case ASTNodeType::NOT: tacType = TACType::NOT; break;
-        default: tacType = TACType::MOVE; break;
+        case ASTNodeType::NOT: 
+            tacType = TACType::NOT;
+            tempType = inferComparisonDataType(operandSymbol); // NOT returns boolean (INT)
+            break;
+        default: 
+            tacType = TACType::MOVE;
+            tempType = inferDataType(operandSymbol);
+            break;
     }
     
+    Symbol* temp = makeTemp(tempType);
     TAC* opTac = tacCreate(tacType, temp, operandSymbol, nullptr);
     
     return tacJoin(operandCode, opTac);
@@ -656,7 +752,7 @@ TAC* generateFunctionCall(ASTNode* node) {
         }
     }
     
-    Symbol* temp = makeTemp();
+    Symbol* temp = makeTemp(dataType::INT); // Function calls typically return INT, could be improved with function signature analysis
     TAC* callTac = tacCreate(TACType::CALL, temp, functionSymbol, nullptr);
     result = tacJoin(result, callTac);
     
@@ -843,7 +939,10 @@ TAC* generateVectorAccess(ASTNode* node) {
     Symbol* vectorSymbol = node->getChildren()[0]->getSymbol();
     Symbol* indexSymbol = getResultSymbol(indexCode, node->getChildren()[1]);
     
-    Symbol* temp = makeTemp();
+    // Infer type from vector symbol (vector access returns the element type)
+    dataType tempType = inferDataType(vectorSymbol);
+    
+    Symbol* temp = makeTemp(tempType);
     TAC* vecreadTac = tacCreate(TACType::VECREAD, temp, vectorSymbol, indexSymbol);
     
     return tacJoin(indexCode, vecreadTac);

@@ -17,6 +17,7 @@ enum class dataType {
     CHAR,       // Single character
     STRING,     // String literal
     VOID,       // Void type (for functions)
+    ADDRESS,    // Address type (for labels)
     UNDEFINED   // Undefined/uninitialized type
 };
 
@@ -27,6 +28,8 @@ enum class identifierType {
     FUNCTION,   // Function identifier
     LITERAL,    // Literal value
     SCALAR,     // Scalar value
+    LABEL,      // Label identifier (for control flow)
+    TEMP,       // Temporary variable (compiler-generated)
     UNDEFINED   // Undefined/uninitialized identifier type
 };
 
