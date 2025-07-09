@@ -1059,16 +1059,13 @@ TAC* generateDoWhile(ASTNode* node) {
     Symbol* conditionSymbol = getResultSymbol(conditionCode, node->getChildren()[1]);
     
     // For do-while: jump back to beginning if condition is true (non-zero)
-    // We need to negate the condition for IFZ (jump if zero)
-    Symbol* temp = makeTemp();
-    TAC* notTac = tacCreate(TACType::NOT, temp, conditionSymbol, nullptr);
-    TAC* ifzTac = tacCreate(TACType::IFZ, nullptr, temp, endLabel);
+    // IFZ jumps if the condition is zero (false), so we jump to end when condition is false
+    TAC* ifzTac = tacCreate(TACType::IFZ, nullptr, conditionSymbol, endLabel);
     TAC* jumpTac = tacCreate(TACType::JUMP, nullptr, beginLabel, nullptr);
     TAC* endLabelTac = tacCreate(TACType::LABEL, nullptr, endLabel, nullptr);
     
     TAC* result = tacJoin(beginLabelTac, bodyCode);
     result = tacJoin(result, conditionCode);
-    result = tacJoin(result, notTac);
     result = tacJoin(result, ifzTac);
     result = tacJoin(result, jumpTac);
     result = tacJoin(result, endLabelTac);

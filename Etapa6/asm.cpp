@@ -17,8 +17,7 @@
 std::ofstream* outFile = nullptr;                                    // Output file stream
 std::unordered_map<std::string, std::string> varLocations;          // Variable to memory location mapping
 std::unordered_map<std::string, int> vectorSizes;                   // Vector name to size mapping
-std::unordered_map<std::string, dataType> varTypes;                 // Variable name to type mapping
-std::vector<std::string> stringLiterals;                            // String literals storage                            // String literals storage
+std::vector<std::string> stringLiterals;                            // String literals storage
 int stackOffset = 0;                                                // Current stack offset for local variables
 int labelCounter = 0;                                               // Counter for generating unique labels
 int stringCounter = 0;                                              // Counter for string literals
@@ -38,9 +37,9 @@ void emitInstruction(const std::string& instruction);
 void emitLabel(const std::string& label);
 void emitComment(const std::string& comment);
 void processInstruction(class TAC* current);
-float evaluateRealExpression(const std::string& expression);
-bool isRealVariable(const std::string& name);
-std::string getRealValue(const std::string& value);
+int evaluateExpression(const std::string& expression);
+void loadOperandToRegister(const std::string& operand, const std::string& reg);
+void storeRegisterToOperand(const std::string& reg, const std::string& operand);
 
 
 std::string getOperandLocation(Symbol* symbol) {
@@ -95,11 +94,6 @@ std::string allocateVariable(const std::string& name, int size) {
         return it->second;
     }
     
-    // Check if this is a real variable and adjust size
-    if (isRealVariable(name)) {
-        size = 4; // float is 4 bytes
-    }
-    
     stackOffset += size;
     std::string location = "-" + std::to_string(stackOffset) + "(%rbp)";
     varLocations[name] = location;
@@ -112,9 +106,12 @@ std::string allocateParameter(const std::string& name) {
         return it->second;
     }
     
-    std::string location = std::to_string(currentParamOffset) + "(%rbp)";
+    // For user-defined functions, parameters come in registers (%edi, %esi, %edx, %ecx)
+    // We'll map them to stack locations and move them there at function start
+    stackOffset += 4;
+    std::string location = "-" + std::to_string(stackOffset) + "(%rbp)";
     varLocations[name] = location;
-    currentParamOffset += 8; // Each parameter is 8 bytes in 64-bit
+    
     return location;
 }
 
@@ -122,38 +119,46 @@ std::string allocateVector(const std::string& name, int elements) {
     return allocateVariable(name, elements * 8);  // 8 bytes per element in 64-bit
 }
 
-// Helper function to evaluate real expressions like "7/1"
-float evaluateRealExpression(const std::string& expression) {
+// Helper function to evaluate expressions like "7/1"
+int evaluateExpression(const std::string& expression) {
     size_t slashPos = expression.find('/');
     if (slashPos != std::string::npos) {
         std::string numeratorStr = expression.substr(0, slashPos);
         std::string denominatorStr = expression.substr(slashPos + 1);
         
-        float numerator = static_cast<float>(std::atof(numeratorStr.c_str()));
-        float denominator = static_cast<float>(std::atof(denominatorStr.c_str()));
+        int numerator = std::atoi(numeratorStr.c_str());
+        int denominator = std::atoi(denominatorStr.c_str());
         
-        if (denominator != 0.0f) {
+        if (denominator != 0) {
             return numerator / denominator;
         }
     }
-    return static_cast<float>(std::atof(expression.c_str()));
+    return std::atoi(expression.c_str());
 }
 
-// Helper function to check if a variable is of real type
-bool isRealVariable(const std::string& name) {
-    auto it = varTypes.find(name);
-    return it != varTypes.end() && it->second == dataType::REAL;
-}
-
-// Helper function to get real value as string (for data section)
-std::string getRealValue(const std::string& value) {
-    if (value.find('/') != std::string::npos) {
-        float realValue = evaluateRealExpression(value);
-        std::ostringstream oss;
-        oss << realValue;
-        return oss.str();
+// Helper function to load operand to register (PIE-compatible)
+void loadOperandToRegister(const std::string& operand, const std::string& reg) {
+    if (operand[0] == '$') {
+        // Immediate value
+        emitInstruction("movl " + operand + ", " + reg);
+    } else if (operand.find("(%rbp)") != std::string::npos) {
+        // Stack variable
+        emitInstruction("movl " + operand + ", " + reg);
+    } else {
+        // Global variable - use PIE-compatible load
+        emitInstruction("movl " + operand + "(%rip), " + reg);
     }
-    return value;
+}
+
+// Helper function to store register to operand (PIE-compatible)
+void storeRegisterToOperand(const std::string& reg, const std::string& operand) {
+    if (operand.find("(%rbp)") != std::string::npos) {
+        // Stack variable
+        emitInstruction("movl " + reg + ", " + operand);
+    } else {
+        // Global variable - use PIE-compatible store
+        emitInstruction("movl " + reg + ", " + operand + "(%rip)");
+    }
 }
 
 std::string getStringLabel(const std::string& str) {
@@ -161,12 +166,12 @@ std::string getStringLabel(const std::string& str) {
     auto it = std::find(stringLiterals.begin(), stringLiterals.end(), str);
     if (it != stringLiterals.end()) {
         size_t index = std::distance(stringLiterals.begin(), it);
-        return "$str_" + std::to_string(index);
+        return "str_" + std::to_string(index);
     }
     
     // Add new string
     stringLiterals.push_back(str);
-    return "$str_" + std::to_string(stringLiterals.size() - 1);
+    return "str_" + std::to_string(stringLiterals.size() - 1);
 }
 
 void emitInstruction(const std::string& instruction) {
@@ -197,7 +202,6 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     outFile = &file;
     varLocations.clear();
     vectorSizes.clear();
-    varTypes.clear();
     stringLiterals.clear();
     stackOffset = 0;
     labelCounter = 0;
@@ -223,25 +227,33 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     
     // Collect vector information, string literals, and global variables first
     std::vector<std::pair<std::string, std::string>> globalVars; // name, initial_value
-    std::vector<std::pair<std::string, int>> globalVectors; // name, size
+    std::vector<std::pair<std::string, std::vector<std::string>>> globalVectors; // name, initialization_values
+    
+    std::string currentVectorName = "";
+    std::vector<std::string> currentVectorValues;
     while (current) {
         if (current->getType() == TACType::BEGINVEC) {
-            std::string vecName = current->getOp1()->getLexeme();
+            currentVectorName = current->getOp1()->getLexeme();
             int size = std::stoi(current->getOp2()->getLexeme());
-            vectorSizes[vecName] = size;
-            globalVectors.push_back({vecName, size});
+            vectorSizes[currentVectorName] = size;
+            currentVectorValues.clear();
+        }
+        else if (current->getType() == TACType::VECWRITE && !currentVectorName.empty()) {
+            // Collect initialization values for the current vector
+            std::string value = current->getOp2()->getLexeme();
+            currentVectorValues.push_back(value);
+        }
+        else if (current->getType() == TACType::ENDVEC && !currentVectorName.empty()) {
+            // Store the vector with its initialization values
+            globalVectors.push_back({currentVectorName, currentVectorValues});
+            currentVectorName = "";
+            currentVectorValues.clear();
         }
         // Collect INIT variables for global data section
         if (current->getType() == TACType::INIT) {
             std::string varName = current->getRes()->getLexeme();
             std::string value = current->getOp1()->getLexeme();
             globalVars.push_back({varName, value});
-            
-            // Try to determine variable type from symbol table
-            Symbol* symbol = getSymbol(varName);
-            if (symbol) {
-                varTypes[varName] = symbol->getDataType();
-            }
         }
         // Check for string literals in PRINT and other operations
         if (current->getType() == TACType::PRINT && current->getOp1()) {
@@ -257,46 +269,27 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     emitLabel(".section .data");
     emitInstruction("int_format: .string \"%d\"");
     emitInstruction("char_format: .string \"%c\"");
-    emitInstruction("real_format: .string \"%.2f\"");
     emitInstruction("string_format: .string \"%s\"");
     emitInstruction("newline: .string \"\\n\"");
     emitInstruction("scanf_int: .string \"%d\"");
     emitInstruction("scanf_char: .string \" %c\"");
-    emitInstruction("scanf_real: .string \"%f\"");
     
     // Global variables
     for (const auto& var : globalVars) {
         std::string varName = var.first;
         std::string value = var.second;
         
-        // Check if this is a real variable
-        bool isReal = isRealVariable(varName);
-        
-        if (isReal) {
-            // Handle real variables
-            if (value.find('/') != std::string::npos) {
-                // Evaluate expressions like "7/01" 
-                float realValue = evaluateRealExpression(value);
-                std::ostringstream oss;
-                oss << realValue;
-                emitInstruction(varName + ": .float " + oss.str());
-            } else {
-                emitInstruction(varName + ": .float " + value);
-            }
-        } else {
-            // Handle integer variables
-            // Handle character literals
-            if (value[0] == '\'' && value.length() == 3 && value[2] == '\'') {
-                value = std::to_string((int)value[1]);
-            }
-            // Handle arithmetic expressions
-            if (value == "1/2") value = "0";
-            if (value == "4/7") value = "0"; 
-            if (value == "5/7") value = "0";
-            if (value == "8/7") value = "1";
-            
-            emitInstruction(varName + ": .long " + value);
+        // Handle character literals
+        if (value[0] == '\'' && value.length() == 3 && value[2] == '\'') {
+            value = std::to_string((int)value[1]);
         }
+        // Handle arithmetic expressions
+        if (value.find('/') != std::string::npos) {
+            int result = evaluateExpression(value);
+            value = std::to_string(result);
+        }
+        
+        emitInstruction(varName + ": .long " + value);
         // Update varLocations to point to global variable (without $ prefix for global vars)
         varLocations[varName] = varName;
     }
@@ -304,8 +297,32 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     // Global vectors
     for (const auto& vec : globalVectors) {
         std::string vecName = vec.first;
-        int size = vec.second;
-        emitInstruction(vecName + ": .space " + std::to_string(size * 4)); // 4 bytes per element for int values
+        const std::vector<std::string>& values = vec.second;
+        
+        emitComment("Vector " + vecName + " initialization");
+        emitLabel(vecName + ":");
+        
+        for (const std::string& value : values) {
+            std::string processedValue = value;
+            
+            // Handle character literals
+            if (processedValue[0] == '\'' && processedValue.length() == 3 && processedValue[2] == '\'') {
+                processedValue = std::to_string((int)processedValue[1]);
+            }
+            // Handle arithmetic expressions and octal numbers
+            if (processedValue.find('/') != std::string::npos) {
+                int result = evaluateExpression(processedValue);
+                processedValue = std::to_string(result);
+            }
+            // Handle octal numbers (like 01, 001, etc.)
+            if (processedValue.length() > 1 && processedValue[0] == '0' && std::isdigit(processedValue[1])) {
+                int octalValue = std::stoi(processedValue, nullptr, 8);
+                processedValue = std::to_string(octalValue);
+            }
+            
+            emitInstruction(".long " + processedValue);
+        }
+        
         // Update varLocations to point to global vector
         varLocations[vecName] = vecName;
     }
@@ -331,6 +348,7 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
     std::vector<TAC*> functionInstructions;
     bool inMainFunction = false;
     bool inOtherFunction = false;
+    bool inVectorInitialization = false;
     
     current = tacHead;
     while (current) {
@@ -354,28 +372,34 @@ void generateASM(TAC* tacHead, const std::string& outputFileName) {
                 }
                 break;
             case TACType::INIT:
-            case TACType::BEGINVEC:
-            case TACType::ENDVEC:
                 if (!inMainFunction && !inOtherFunction) {
                     globalInits.push_back(current);
                 } else if (inMainFunction) {
-                    // Skip BEGINVEC and ENDVEC in main since vectors are now global
-                    if (current->getType() != TACType::BEGINVEC && current->getType() != TACType::ENDVEC) {
-                        mainInstructions.push_back(current);
-                    }
+                    mainInstructions.push_back(current);
                 } else {
                     functionInstructions.push_back(current);
                 }
                 break;
+            case TACType::BEGINVEC:
+                inVectorInitialization = true;
+                if (!inMainFunction && !inOtherFunction) {
+                    globalInits.push_back(current);
+                }
+                break;
+            case TACType::ENDVEC:
+                inVectorInitialization = false;
+                if (!inMainFunction && !inOtherFunction) {
+                    globalInits.push_back(current);
+                }
+                break;
             case TACType::VECWRITE:
-                // Vector writes should always be processed, especially for initializations
-                if (inMainFunction) {
-                    mainInstructions.push_back(current);
-                } else if (inOtherFunction) {
-                    functionInstructions.push_back(current);
-                } else {
-                    // Global vector initializations should be in main
-                    mainInstructions.push_back(current);
+                // Skip vector writes that are part of global initialization
+                if (!inVectorInitialization) {
+                    if (inMainFunction) {
+                        mainInstructions.push_back(current);
+                    } else if (inOtherFunction) {
+                        functionInstructions.push_back(current);
+                    }
                 }
                 break;
             default:
@@ -459,44 +483,67 @@ void processInstruction(TAC* current) {
                 std::string destLoc = getOperandLocation(current->getRes());
                 emitComment("Move " + src + " to " + dest);
                 if (src[0] == '$') {
-                    emitInstruction("movl " + src + ", " + destLoc);
+                    // Check if destination is a global variable
+                    if (destLoc.find("(%rbp)") == std::string::npos) {
+                        // Global variable - use PIE-compatible store
+                        emitInstruction("movl " + src + ", " + destLoc + "(%rip)");
+                    } else {
+                        // Stack variable
+                        emitInstruction("movl " + src + ", " + destLoc);
+                    }
                 } else {
-                    emitInstruction("movl " + src + ", %eax");
-                    emitInstruction("movl %eax, " + destLoc);
+                    // Check if source is a global variable
+                    if (src.find("(%rbp)") == std::string::npos) {
+                        // Global variable - use PIE-compatible load
+                        emitInstruction("movl " + src + "(%rip), %eax");
+                    } else {
+                        // Stack variable
+                        emitInstruction("movl " + src + ", %eax");
+                    }
+                    // Check if destination is a global variable
+                    if (destLoc.find("(%rbp)") == std::string::npos) {
+                        // Global variable - use PIE-compatible store
+                        emitInstruction("movl %eax, " + destLoc + "(%rip)");
+                    } else {
+                        // Stack variable
+                        emitInstruction("movl %eax, " + destLoc);
+                    }
                 }
                 break;
             }
             case TACType::PRINT: {
                 std::string value = getOperandValue(current->getOp1());
                 emitComment("Print " + value);
-                std::string format = "$int_format";
+                std::string format = "int_format";
                 
-                // Check if we're printing a real variable
-                if (current->getOp1() && isRealVariable(current->getOp1()->getLexeme())) {
-                    format = "$real_format";
-                    // For real variables, we need to push as float
-                    // In 64-bit System V ABI, floating point goes in %xmm0
-                    emitInstruction("flds " + value);  // Load float onto FPU stack
-                    emitInstruction("fstps -8(%rbp)"); // Store as float on stack temporarily
-                    emitInstruction("movss -8(%rbp), %xmm0"); // Move to SSE register
-                    emitInstruction("cvtss2sd %xmm0, %xmm0"); // Convert single to double
-                    emitInstruction("movq " + format + ", %rdi");
-                    emitInstruction("call printf");
-                } else {
-                    // Integer or string printing
-                    if (value.front() == '"' && value.back() == '"') {
-                        format = "$string_format";
-                        value = getStringLabel(value);
-                    }
-                    // In 64-bit System V ABI, first argument goes in %rdi, second in %rsi
-                    if (value[0] == '$') {
-                        emitInstruction("movq " + value + ", %rsi");
-                    } else {
-                        emitInstruction("movq " + value + ", %rsi");
-                    }
-                    emitInstruction("movq " + format + ", %rdi");
-                    emitInstruction("call printf");
+                // Integer or string printing
+                if (value.front() == '"' && value.back() == '"') {
+                    format = "string_format";
+                    value = getStringLabel(value);
                 }
+                // In 64-bit System V ABI, first argument goes in %rdi, second in %rsi
+                if (value[0] == '$') {
+                    // Remove $ prefix and use PIE-compatible addressing
+                    std::string cleanValue = value.substr(1);
+                    emitInstruction("leaq " + cleanValue + "(%rip), %rsi");
+                } else {
+                    // Check if it's a global variable (no %rbp reference)
+                    if (value.find("(%rbp)") == std::string::npos && value[0] != '$') {
+                        // Check if it's a string literal or an integer variable
+                        if (value.find("str_") == 0) {
+                            // String literal - use address
+                            emitInstruction("leaq " + value + "(%rip), %rsi");
+                        } else {
+                            // Global variable value - use PIE-compatible load
+                            emitInstruction("movl " + value + "(%rip), %esi");
+                        }
+                    } else {
+                        // Stack variable or immediate value
+                        emitInstruction("movl " + value + ", %esi");
+                    }
+                }
+                emitInstruction("leaq " + format + "(%rip), %rdi");
+                emitInstruction("call printf@PLT");
                 break;
             }
             case TACType::BEGINFUN: {
@@ -508,6 +555,47 @@ void processInstruction(TAC* current) {
                 emitInstruction("pushq %rbp");
                 emitInstruction("movq %rsp, %rbp");
                 stackOffset = 0; // Reset local variable offset
+                
+                // For user-defined functions (not main), move register arguments to stack
+                if (funcName != "main") {
+                    // Look ahead to see what parameters this function has
+                    TAC* nextTAC = current->getNext();
+                    int paramCount = 0;
+                    while (nextTAC && nextTAC->getType() != TACType::ENDFUN) {
+                        // Count operations that use parameters (typically first operations in function)
+                        if (nextTAC->getType() == TACType::ADD || nextTAC->getType() == TACType::SUB ||
+                            nextTAC->getType() == TACType::MUL || nextTAC->getType() == TACType::DIV ||
+                            nextTAC->getType() == TACType::MOD) {
+                            // If using parameter symbols, allocate and move from registers
+                            if (nextTAC->getOp1() && paramCount < 2) {
+                                std::string param1Name = nextTAC->getOp1()->getLexeme();
+                                if (varLocations.find(param1Name) == varLocations.end()) {
+                                    std::string paramLoc = allocateParameter(param1Name);
+                                    if (paramCount == 0) {
+                                        emitInstruction("movl %edi, " + paramLoc);
+                                    } else if (paramCount == 1) {
+                                        emitInstruction("movl %esi, " + paramLoc);
+                                    }
+                                    paramCount++;
+                                }
+                            }
+                            if (nextTAC->getOp2() && paramCount < 2) {
+                                std::string param2Name = nextTAC->getOp2()->getLexeme();
+                                if (varLocations.find(param2Name) == varLocations.end()) {
+                                    std::string paramLoc = allocateParameter(param2Name);
+                                    if (paramCount == 0) {
+                                        emitInstruction("movl %edi, " + paramLoc);
+                                    } else if (paramCount == 1) {
+                                        emitInstruction("movl %esi, " + paramLoc);
+                                    }
+                                    paramCount++;
+                                }
+                            }
+                            break; // Only process first operation to get parameters
+                        }
+                        nextTAC = nextTAC->getNext();
+                    }
+                }
                 break;
             }
             case TACType::ENDFUN: {
@@ -523,11 +611,7 @@ void processInstruction(TAC* current) {
                 if (current->getOp1()) {
                     std::string retVal = getOperandValue(current->getOp1());
                     emitComment("Return " + retVal);
-                    if (retVal[0] == '$') {
-                        emitInstruction("movq " + retVal + ", %rax");
-                    } else {
-                        emitInstruction("movq " + retVal + ", %rax");
-                    }
+                    loadOperandToRegister(retVal, "%eax");
                 }
                 break;
             }
@@ -537,62 +621,12 @@ void processInstruction(TAC* current) {
                 std::string op2 = getOperandValue(current->getOp2());
                 std::string resultLoc = allocateVariable(result);
                 
-                // Check if any operand is a real variable
-                bool op1IsReal = current->getOp1() && isRealVariable(current->getOp1()->getLexeme());
-                bool op2IsReal = current->getOp2() && isRealVariable(current->getOp2()->getLexeme());
-                
-                if (op1IsReal || op2IsReal) {
-                    // Real number addition using FPU
-                    emitComment("Real Add: " + result + " = " + op1 + " + " + op2);
-                    
-                    // Load first operand
-                    if (op1IsReal) {
-                        emitInstruction("flds " + op1);
-                    } else {
-                        // Convert integer to float
-                        if (op1[0] == '$') {
-                            emitInstruction("movq " + op1 + ", %rax");
-                            emitInstruction("movq %rax, -8(%rbp)");
-                            emitInstruction("filds -8(%rbp)");
-                        } else {
-                            emitInstruction("filds " + op1);
-                        }
-                    }
-                    
-                    // Add second operand
-                    if (op2IsReal) {
-                        emitInstruction("fadds " + op2);
-                    } else {
-                        // Convert integer to float
-                        if (op2[0] == '$') {
-                            emitInstruction("movq " + op2 + ", %rax");
-                            emitInstruction("movq %rax, -8(%rbp)");
-                            emitInstruction("fiadds -8(%rbp)");
-                        } else {
-                            emitInstruction("fiadds " + op2);
-                        }
-                    }
-                    
-                    // Store result
-                    emitInstruction("fstps " + resultLoc);
-                    
-                    // Mark result as real type
-                    varTypes[result] = dataType::REAL;
-                } else {
-                    // Integer addition
-                    emitComment("Add: " + result + " = " + op1 + " + " + op2);
-                    if (op1[0] == '$') {
-                        emitInstruction("movl " + op1 + ", %eax");
-                    } else {
-                        emitInstruction("movl " + op1 + ", %eax");
-                    }
-                    if (op2[0] == '$') {
-                        emitInstruction("addl " + op2 + ", %eax");
-                    } else {
-                        emitInstruction("addl " + op2 + ", %eax");
-                    }
-                    emitInstruction("movl %eax, " + resultLoc);
-                }
+                // Integer addition
+                emitComment("Add: " + result + " = " + op1 + " + " + op2);
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("addl %ebx, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
                 break;
             }
             case TACType::SUB: {
@@ -601,62 +635,12 @@ void processInstruction(TAC* current) {
                 std::string op2 = getOperandValue(current->getOp2());
                 std::string resultLoc = allocateVariable(result);
                 
-                // Check if any operand is a real variable
-                bool op1IsReal = current->getOp1() && isRealVariable(current->getOp1()->getLexeme());
-                bool op2IsReal = current->getOp2() && isRealVariable(current->getOp2()->getLexeme());
-                
-                if (op1IsReal || op2IsReal) {
-                    // Real number subtraction using FPU
-                    emitComment("Real Subtract: " + result + " = " + op1 + " - " + op2);
-                    
-                    // Load first operand
-                    if (op1IsReal) {
-                        emitInstruction("flds " + op1);
-                    } else {
-                        // Convert integer to float
-                        if (op1[0] == '$') {
-                            emitInstruction("movq " + op1 + ", %rax");
-                            emitInstruction("movq %rax, -8(%rbp)");
-                            emitInstruction("filds -8(%rbp)");
-                        } else {
-                            emitInstruction("filds " + op1);
-                        }
-                    }
-                    
-                    // Subtract second operand
-                    if (op2IsReal) {
-                        emitInstruction("fsubs " + op2);
-                    } else {
-                        // Convert integer to float
-                        if (op2[0] == '$') {
-                            emitInstruction("movq " + op2 + ", %rax");
-                            emitInstruction("movq %rax, -8(%rbp)");
-                            emitInstruction("fisubs -8(%rbp)");
-                        } else {
-                            emitInstruction("fisubs " + op2);
-                        }
-                    }
-                    
-                    // Store result
-                    emitInstruction("fstps " + resultLoc);
-                    
-                    // Mark result as real type
-                    varTypes[result] = dataType::REAL;
-                } else {
-                    // Integer subtraction
-                    emitComment("Subtract: " + result + " = " + op1 + " - " + op2);
-                    if (op1[0] == '$') {
-                        emitInstruction("movl " + op1 + ", %eax");
-                    } else {
-                        emitInstruction("movl " + op1 + ", %eax");
-                    }
-                    if (op2[0] == '$') {
-                        emitInstruction("subl " + op2 + ", %eax");
-                    } else {
-                        emitInstruction("subl " + op2 + ", %eax");
-                    }
-                    emitInstruction("movl %eax, " + resultLoc);
-                }
+                // Integer subtraction
+                emitComment("Subtract: " + result + " = " + op1 + " - " + op2);
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("subl %ebx, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
                 break;
             }
             case TACType::MUL: {
@@ -665,18 +649,10 @@ void processInstruction(TAC* current) {
                 std::string op2 = getOperandValue(current->getOp2());
                 std::string resultLoc = allocateVariable(result);
                 emitComment("Multiply: " + result + " = " + op1 + " * " + op2);
-                if (op1[0] == '$') {
-                    emitInstruction("movl " + op1 + ", %eax");
-                } else {
-                    emitInstruction("movl " + op1 + ", %eax");
-                }
-                if (op2[0] == '$') {
-                    emitInstruction("movl " + op2 + ", %ebx");
-                } else {
-                    emitInstruction("movl " + op2 + ", %ebx");
-                }
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
                 emitInstruction("imull %ebx, %eax");
-                emitInstruction("movl %eax, " + resultLoc);
+                storeRegisterToOperand("%eax", resultLoc);
                 break;
             }
             case TACType::DIV: {
@@ -685,19 +661,24 @@ void processInstruction(TAC* current) {
                 std::string op2 = getOperandValue(current->getOp2());
                 std::string resultLoc = allocateVariable(result);
                 emitComment("Divide: " + result + " = " + op1 + " / " + op2);
-                if (op1[0] == '$') {
-                    emitInstruction("movl " + op1 + ", %eax");
-                } else {
-                    emitInstruction("movl " + op1 + ", %eax");
-                }
+                loadOperandToRegister(op1, "%eax");
                 emitInstruction("cdq"); // Sign extend %eax to %edx:%eax
-                if (op2[0] == '$') {
-                    emitInstruction("movl " + op2 + ", %ebx");
-                } else {
-                    emitInstruction("movl " + op2 + ", %ebx");
-                }
+                loadOperandToRegister(op2, "%ebx");
                 emitInstruction("idivl %ebx");
-                emitInstruction("movl %eax, " + resultLoc);
+                storeRegisterToOperand("%eax", resultLoc);
+                break;
+            }
+            case TACType::MOD: {
+                std::string result = current->getRes()->getLexeme();
+                std::string op1 = getOperandValue(current->getOp1());
+                std::string op2 = getOperandValue(current->getOp2());
+                std::string resultLoc = allocateVariable(result);
+                emitComment("Modulo: " + result + " = " + op1 + " % " + op2);
+                loadOperandToRegister(op1, "%eax");
+                emitInstruction("cdq"); // Sign extend %eax to %edx:%eax
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("idivl %ebx");
+                storeRegisterToOperand("%edx", resultLoc); // Remainder is in %edx
                 break;
             }
             case TACType::LT: {
@@ -708,21 +689,16 @@ void processInstruction(TAC* current) {
                 std::string trueLabel = "lt_true_" + std::to_string(labelCounter++);
                 std::string endLabel = "lt_end_" + std::to_string(labelCounter++);
                 emitComment("Less than: " + result + " = " + op1 + " < " + op2);
-                if (op1[0] == '$') {
-                    emitInstruction("movl " + op1 + ", %eax");
-                } else {
-                    emitInstruction("movl " + op1 + ", %eax");
-                }
-                if (op2[0] == '$') {
-                    emitInstruction("cmpl " + op2 + ", %eax");
-                } else {
-                    emitInstruction("cmpl " + op2 + ", %eax");
-                }
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("cmpl %ebx, %eax");
                 emitInstruction("jl " + trueLabel);
-                emitInstruction("movl $0, " + resultLoc);
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
                 emitInstruction("jmp " + endLabel);
                 emitLabel(trueLabel + ":");
-                emitInstruction("movl $1, " + resultLoc);
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
                 emitLabel(endLabel + ":");
                 break;
             }
@@ -734,21 +710,100 @@ void processInstruction(TAC* current) {
                 std::string trueLabel = "eq_true_" + std::to_string(labelCounter++);
                 std::string endLabel = "eq_end_" + std::to_string(labelCounter++);
                 emitComment("Equal: " + result + " = " + op1 + " == " + op2);
-                if (op1[0] == '$') {
-                    emitInstruction("movl " + op1 + ", %eax");
-                } else {
-                    emitInstruction("movl " + op1 + ", %eax");
-                }
-                if (op2[0] == '$') {
-                    emitInstruction("cmpl " + op2 + ", %eax");
-                } else {
-                    emitInstruction("cmpl " + op2 + ", %eax");
-                }
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("cmpl %ebx, %eax");
                 emitInstruction("je " + trueLabel);
-                emitInstruction("movl $0, " + resultLoc);
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
                 emitInstruction("jmp " + endLabel);
                 emitLabel(trueLabel + ":");
-                emitInstruction("movl $1, " + resultLoc);
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitLabel(endLabel + ":");
+                break;
+            }
+            case TACType::NE: {
+                std::string result = current->getRes()->getLexeme();
+                std::string op1 = getOperandValue(current->getOp1());
+                std::string op2 = getOperandValue(current->getOp2());
+                std::string resultLoc = allocateVariable(result);
+                std::string trueLabel = "ne_true_" + std::to_string(labelCounter++);
+                std::string endLabel = "ne_end_" + std::to_string(labelCounter++);
+                emitComment("Not Equal: " + result + " = " + op1 + " != " + op2);
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("cmpl %ebx, %eax");
+                emitInstruction("jne " + trueLabel);
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitInstruction("jmp " + endLabel);
+                emitLabel(trueLabel + ":");
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitLabel(endLabel + ":");
+                break;
+            }
+            case TACType::GT: {
+                std::string result = current->getRes()->getLexeme();
+                std::string op1 = getOperandValue(current->getOp1());
+                std::string op2 = getOperandValue(current->getOp2());
+                std::string resultLoc = allocateVariable(result);
+                std::string trueLabel = "gt_true_" + std::to_string(labelCounter++);
+                std::string endLabel = "gt_end_" + std::to_string(labelCounter++);
+                emitComment("Greater than: " + result + " = " + op1 + " > " + op2);
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("cmpl %ebx, %eax");
+                emitInstruction("jg " + trueLabel);
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitInstruction("jmp " + endLabel);
+                emitLabel(trueLabel + ":");
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitLabel(endLabel + ":");
+                break;
+            }
+            case TACType::LE: {
+                std::string result = current->getRes()->getLexeme();
+                std::string op1 = getOperandValue(current->getOp1());
+                std::string op2 = getOperandValue(current->getOp2());
+                std::string resultLoc = allocateVariable(result);
+                std::string trueLabel = "le_true_" + std::to_string(labelCounter++);
+                std::string endLabel = "le_end_" + std::to_string(labelCounter++);
+                emitComment("Less or Equal: " + result + " = " + op1 + " <= " + op2);
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("cmpl %ebx, %eax");
+                emitInstruction("jle " + trueLabel);
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitInstruction("jmp " + endLabel);
+                emitLabel(trueLabel + ":");
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitLabel(endLabel + ":");
+                break;
+            }
+            case TACType::GE: {
+                std::string result = current->getRes()->getLexeme();
+                std::string op1 = getOperandValue(current->getOp1());
+                std::string op2 = getOperandValue(current->getOp2());
+                std::string resultLoc = allocateVariable(result);
+                std::string trueLabel = "ge_true_" + std::to_string(labelCounter++);
+                std::string endLabel = "ge_end_" + std::to_string(labelCounter++);
+                emitComment("Greater or Equal: " + result + " = " + op1 + " >= " + op2);
+                loadOperandToRegister(op1, "%eax");
+                loadOperandToRegister(op2, "%ebx");
+                emitInstruction("cmpl %ebx, %eax");
+                emitInstruction("jge " + trueLabel);
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitInstruction("jmp " + endLabel);
+                emitLabel(trueLabel + ":");
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
                 emitLabel(endLabel + ":");
                 break;
             }
@@ -759,17 +814,75 @@ void processInstruction(TAC* current) {
                 std::string zeroLabel = "not_zero_" + std::to_string(labelCounter++);
                 std::string endLabel = "not_end_" + std::to_string(labelCounter++);
                 emitComment("Logical NOT: " + result + " = !" + op1);
-                if (op1[0] == '$') {
-                    emitInstruction("movl " + op1 + ", %eax");
-                } else {
-                    emitInstruction("movl " + op1 + ", %eax");
-                }
+                loadOperandToRegister(op1, "%eax");
                 emitInstruction("cmpl $0, %eax");
                 emitInstruction("je " + zeroLabel);
-                emitInstruction("movl $0, " + resultLoc);
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
                 emitInstruction("jmp " + endLabel);
                 emitLabel(zeroLabel + ":");
-                emitInstruction("movl $1, " + resultLoc);
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitLabel(endLabel + ":");
+                break;
+            }
+            case TACType::AND: {
+                std::string result = current->getRes()->getLexeme();
+                std::string op1 = getOperandValue(current->getOp1());
+                std::string op2 = getOperandValue(current->getOp2());
+                std::string resultLoc = allocateVariable(result);
+                std::string falseLabel = "and_false_" + std::to_string(labelCounter++);
+                std::string endLabel = "and_end_" + std::to_string(labelCounter++);
+                emitComment("Logical AND: " + result + " = " + op1 + " && " + op2);
+                
+                // Short-circuit evaluation: if op1 is false, result is false
+                loadOperandToRegister(op1, "%eax");
+                emitInstruction("cmpl $0, %eax");
+                emitInstruction("je " + falseLabel);
+                
+                // Check op2: if op2 is false, result is false
+                loadOperandToRegister(op2, "%eax");
+                emitInstruction("cmpl $0, %eax");
+                emitInstruction("je " + falseLabel);
+                
+                // Both are true, result is true
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitInstruction("jmp " + endLabel);
+                
+                emitLabel(falseLabel + ":");
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitLabel(endLabel + ":");
+                break;
+            }
+            case TACType::OR: {
+                std::string result = current->getRes()->getLexeme();
+                std::string op1 = getOperandValue(current->getOp1());
+                std::string op2 = getOperandValue(current->getOp2());
+                std::string resultLoc = allocateVariable(result);
+                std::string trueLabel = "or_true_" + std::to_string(labelCounter++);
+                std::string endLabel = "or_end_" + std::to_string(labelCounter++);
+                emitComment("Logical OR: " + result + " = " + op1 + " || " + op2);
+                
+                // Short-circuit evaluation: if op1 is true, result is true
+                loadOperandToRegister(op1, "%eax");
+                emitInstruction("cmpl $0, %eax");
+                emitInstruction("jne " + trueLabel);
+                
+                // Check op2: if op2 is true, result is true
+                loadOperandToRegister(op2, "%eax");
+                emitInstruction("cmpl $0, %eax");
+                emitInstruction("jne " + trueLabel);
+                
+                // Both are false, result is false
+                emitInstruction("movl $0, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
+                emitInstruction("jmp " + endLabel);
+                
+                emitLabel(trueLabel + ":");
+                emitInstruction("movl $1, %eax");
+                storeRegisterToOperand("%eax", resultLoc);
                 emitLabel(endLabel + ":");
                 break;
             }
@@ -787,11 +900,7 @@ void processInstruction(TAC* current) {
                 std::string condition = getOperandValue(current->getOp1());
                 std::string label = current->getOp2()->getLexeme();
                 emitComment("Jump if zero to " + label);
-                if (condition[0] == '$') {
-                    emitInstruction("movl " + condition + ", %eax");
-                } else {
-                    emitInstruction("movl " + condition + ", %eax");
-                }
+                loadOperandToRegister(condition, "%eax");
                 emitInstruction("cmpl $0, %eax");
                 emitInstruction("je " + label);
                 break;
@@ -800,21 +909,56 @@ void processInstruction(TAC* current) {
                 std::string result = current->getRes()->getLexeme();
                 std::string funcName = current->getOp1()->getLexeme();
                 emitComment("Call function " + funcName);
-                emitInstruction("call " + funcName);
                 
-                // In 64-bit System V ABI, no need to clean up arguments from stack
-                // since they are passed in registers
+                // Collect the ARG instructions before this CALL
+                std::vector<std::string> args;
+                TAC* temp = current->getPrev();
+                while (temp && temp->getType() == TACType::ARG) {
+                    std::string arg = getOperandValue(temp->getOp1());
+                    args.push_back(arg);
+                    temp = temp->getPrev();
+                }
+                
+                // Reverse args to get correct order (first arg in args[0])
+                std::reverse(args.begin(), args.end());
+                
+                // Skip string arguments for user-defined functions (these are for print formatting)
+                std::vector<std::string> functionArgs;
+                for (const std::string& arg : args) {
+                    if (!(arg.front() == '"' && arg.back() == '"')) {
+                        functionArgs.push_back(arg);
+                    }
+                }
+                
+                // Pass arguments via registers for user-defined functions
+                if (funcName != "printf" && funcName != "scanf") {
+                    if (functionArgs.size() >= 1) {
+                        loadOperandToRegister(functionArgs[0], "%edi");
+                    }
+                    if (functionArgs.size() >= 2) {
+                        loadOperandToRegister(functionArgs[1], "%esi");
+                    }
+                    // For more than 2 args, we'd need %edx, %ecx, etc.
+                }
+                
+                // For external functions, use PLT
+                if (funcName == "printf" || funcName == "scanf") {
+                    emitInstruction("call " + funcName + "@PLT");
+                } else {
+                    // For internal functions, direct call
+                    emitInstruction("call " + funcName);
+                }
                 
                 if (!result.empty()) {
                     std::string resultLoc = allocateVariable(result);
-                    emitInstruction("movq %rax, " + resultLoc);
+                    storeRegisterToOperand("%eax", resultLoc);
                 }
                 break;
             }
             case TACType::ARG: {
                 // In 64-bit System V ABI, arguments are passed in registers
-                // (%rdi, %rsi, %rdx, %rcx, %r8, %r9), so we don't push to stack
-                // This case is handled in the function call itself
+                // (%rdi, %rsi, %rdx, %rcx, %r8, %r9), then on stack
+                // For simplicity, collect arguments and pass them when CALL happens
                 break;
             }
             case TACType::READ: {
@@ -822,17 +966,17 @@ void processInstruction(TAC* current) {
                 std::string varLoc = getOperandLocation(current->getRes());
                 emitComment("Read into " + var);
                 // In 64-bit System V ABI, first argument goes in %rdi, second in %rsi
-                // For global variables, we need the address (add $)
+                // For global variables, we need the address (using PIE-compatible addressing)
                 // For stack variables, we need to use lea to get address
                 if (varLoc.find("(%rbp)") == std::string::npos) {
-                    // Global variable - use address directly
-                    emitInstruction("movq $" + varLoc + ", %rsi");
+                    // Global variable - use PIE-compatible addressing
+                    emitInstruction("leaq " + varLoc + "(%rip), %rsi");
                 } else {
                     // Stack variable - use lea to get effective address
                     emitInstruction("leaq " + varLoc + ", %rsi");
                 }
-                emitInstruction("movq $scanf_int, %rdi");
-                emitInstruction("call scanf");
+                emitInstruction("leaq scanf_int(%rip), %rdi");
+                emitInstruction("call scanf@PLT");
                 break;
             }
             case TACType::VECWRITE: {
@@ -854,10 +998,11 @@ void processInstruction(TAC* current) {
                     emitInstruction("movl " + value + ", %ebx");
                 }
                 
-                // For global vectors, use direct addressing
+                // For global vectors, use PIE-compatible addressing
                 if (vecLoc.find("(%rbp)") == std::string::npos) {
-                    // Global vector - use direct addressing with index
-                    emitInstruction("movl %ebx, " + vecLoc + "(,%rax)");
+                    // Global vector - use PIE-compatible addressing with index
+                    emitInstruction("leaq " + vecLoc + "(%rip), %rcx");
+                    emitInstruction("movl %ebx, (%rcx,%rax)");
                 } else {
                     // Stack vector (shouldn't happen anymore, but keep for compatibility)
                     size_t parenPos = vecLoc.find('(');
@@ -875,17 +1020,15 @@ void processInstruction(TAC* current) {
                 std::string vecLoc = getOperandLocation(current->getOp1());
                 emitComment("Vector read: " + result + " = " + vecName + "[" + index + "]");
                 
-                if (index[0] == '$') {
-                    emitInstruction("movl " + index + ", %eax");
-                } else {
-                    emitInstruction("movl " + index + ", %eax");
-                }
+                // Load index using PIE-compatible method
+                loadOperandToRegister(index, "%eax");
                 emitInstruction("imull $4, %eax"); // 4 bytes per element for int values
                 
-                // For global vectors, use direct addressing
+                // For global vectors, use PIE-compatible addressing
                 if (vecLoc.find("(%rbp)") == std::string::npos) {
-                    // Global vector - use direct addressing with index
-                    emitInstruction("movl " + vecLoc + "(,%rax), %ebx");
+                    // Global vector - use PIE-compatible addressing with index
+                    emitInstruction("leaq " + vecLoc + "(%rip), %rcx");
+                    emitInstruction("movl (%rcx,%rax), %ebx");
                 } else {
                     // Stack vector (shouldn't happen anymore, but keep for compatibility)
                     size_t parenPos = vecLoc.find('(');

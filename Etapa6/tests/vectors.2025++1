@@ -1,0 +1,23 @@
+int i = 0;
+int vector[01] = 1000, 2, 3, 4, 5, 6, 7, 8, 9, 01;
+int sum = 0;
+
+int main () {
+
+    print "Testing int vector adressing: \n";
+    while (i < 01) do {
+        print vector[i] " ";
+        i = i + 1;
+    }
+    print "\n";
+
+    print "Testing int vector sum: \n";
+    i = 0;
+    while (i < 01) do {
+        sum = sum + vector[i];
+        i = i + 1;
+    }
+    print "Final sum: " sum "\n";
+
+    return 0;
+}

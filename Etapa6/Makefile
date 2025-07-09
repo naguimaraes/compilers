@@ -38,12 +38,41 @@ assemble: $(PROJECT)
 	@./$(PROJECT) $(PROJECT).2025++1 output/$(PROJECT)_symbol_table.txt output/$(PROJECT)_AST.txt output/$(PROJECT)_decompiled.txt output/$(PROJECT)_TAC.txt output/$(PROJECT).s
 	@echo "Compilation finished."
 	@echo "\nGenerating binary code:"
-	gcc -no-pie output/$(PROJECT).s -o output/$(PROJECT).out
+	gcc output/$(PROJECT).s -o output/$(PROJECT).out
 	@echo "- Binary code saved at output/$(PROJECT).out"
 
 run: assemble
 	@echo "\nRunning the program:"
 	@./output/$(PROJECT).out
+
+.PHONY: test
+test: $(PROJECT)
+	@if [ -z "$(FILE)" ]; then \
+		echo "Usage: make test FILE=<input_file>"; \
+		echo "Example: make test FILE=tests/io.2025++1"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(FILE)" ]; then \
+		echo "Error: File '$(FILE)' not found."; \
+		exit 1; \
+	fi
+	@mkdir -p output
+	@BASENAME=$$(basename "$(FILE)" .2025++1); \
+	./$(PROJECT) "$(FILE)" "output/$${BASENAME}_symbol_table.txt" "output/$${BASENAME}_AST.txt" "output/$${BASENAME}_decompiled.txt" "output/$${BASENAME}_TAC.txt" "output/$${BASENAME}.s"; \
+	if [ $$? -eq 0 ]; then \
+		echo "\nGenerating binary code:"; \
+		gcc -o "output/$${BASENAME}.out" "output/$${BASENAME}.s"; \
+		if [ $$? -eq 0 ]; then \
+			echo "- Binary code saved at output/$${BASENAME}.out"; \
+			echo "\nRunning the program:"; \
+			./output/$${BASENAME}.out; \
+			echo "- Test completed successfully for $$BASENAME."; \
+		else \
+			echo "- Error: Failed to generate binary code."; \
+		fi \
+	else \
+		echo "- Error: Compilation failed."; \
+	fi
 
 OBJS = lex.yy.o parser.tab.o ast.o symbol.o verifications.o tac.o asm.o main.o
 $(PROJECT): $(OBJS)
@@ -64,9 +93,9 @@ versions:
 
 .PHONY: clean
 clean:
-	@rm -rf $(PROJECT) lex.yy.cpp *.o .docker-build $(PROJECT).tgz *.output *.tgz *.tab.* *.xml *.html *.gv *_recompiled.txt output/
+	@rm -rf $(PROJECT) lex.yy.cpp *.o .docker-build $(PROJECT).tgz *.output *.tgz *.tab.* *.xml *.html *.gv *_recompiled.txt output/*
 
 .PHONY: tgz
 tgz: clean
 	@touch $(PROJECT).tgz
-	@tar cvzf $(PROJECT).tgz --add-file=Makefile --add-file=ast.cpp --add-file=ast.hpp --add-file=main.cpp --add-file=parser.ypp --add-file=scanner.l --add-file=symbol.cpp --add-file=symbol.hpp --add-file=$(PROJECT).2025++1 --add-file=verifications.cpp --add-file=verifications.hpp --add-file=tac.cpp --add-file=tac.hpp --add-file=asm.cpp --add-file=asm.hpp 
+	@tar cvzf $(PROJECT).tgz Makefile ast.cpp ast.hpp main.cpp parser.ypp scanner.l symbol.cpp symbol.hpp verifications.cpp verifications.hpp tac.cpp tac.hpp asm.cpp asm.hpp relatorio.md output/ tests/
