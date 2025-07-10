@@ -1,0 +1,163 @@
++-------------------------------------------------------+
+|       TAC LIST MADE BY NATHAN GUIMARAES (334437)      |
++-------------+-------------+-------------+-------------+
+| OPERATION   | RESULT      | OPERAND1    | OPERAND2    |
++-------------+-------------+-------------+-------------+
+| INIT        | x           | 0           |             |
+| INIT        | y           | 0           |             |
+| INIT        | counter     | 0           |             |
+| INIT        | counterB... | 0           |             |
+| BEGINFUN    |             | main        |             |
+| PRINT       |             | "Enter a... |             |
+| READ        | x           |             |             |
+| PRINT       |             | "Enter a... |             |
+| READ        | y           |             |             |
+| PRINT       |             | "Enter a... |             |
+| READ        | counter     |             |             |
+| PRINT       |             | "\nCompa... |             |
+| GT          | __temp0     | x           | y           |
+| IFZ         |             | __temp0     | __label0    |
+| PRINT       |             | "x > y: ... |             |
+| JUMP        |             | __label1    |             |
+| LABEL       |             | __label0    |             |
+| PRINT       |             | "x > y: ... |             |
+| LABEL       |             | __label1    |             |
+| LT          | __temp1     | x           | y           |
+| IFZ         |             | __temp1     | __label2    |
+| PRINT       |             | "x < y: ... |             |
+| JUMP        |             | __label3    |             |
+| LABEL       |             | __label2    |             |
+| PRINT       |             | "x < y: ... |             |
+| LABEL       |             | __label3    |             |
+| GE          | __temp2     | x           | y           |
+| IFZ         |             | __temp2     | __label4    |
+| PRINT       |             | "x >= y:... |             |
+| JUMP        |             | __label5    |             |
+| LABEL       |             | __label4    |             |
+| PRINT       |             | "x >= y:... |             |
+| LABEL       |             | __label5    |             |
+| LE          | __temp3     | x           | y           |
+| IFZ         |             | __temp3     | __label6    |
+| PRINT       |             | "x <= y:... |             |
+| JUMP        |             | __label7    |             |
+| LABEL       |             | __label6    |             |
+| PRINT       |             | "x <= y:... |             |
+| LABEL       |             | __label7    |             |
+| EQ          | __temp4     | x           | y           |
+| IFZ         |             | __temp4     | __label8    |
+| PRINT       |             | "x == y:... |             |
+| JUMP        |             | __label9    |             |
+| LABEL       |             | __label8    |             |
+| PRINT       |             | "x == y:... |             |
+| LABEL       |             | __label9    |             |
+| NE          | __temp5     | x           | y           |
+| IFZ         |             | __temp5     | __label10   |
+| PRINT       |             | "x != y:... |             |
+| JUMP        |             | __label11   |             |
+| LABEL       |             | __label10   |             |
+| PRINT       |             | "x != y:... |             |
+| LABEL       |             | __label11   |             |
+| PRINT       |             | "\nLogic... |             |
+| GT          | __temp6     | x           | 0           |
+| GT          | __temp7     | y           | 0           |
+| AND         | __temp8     | __temp6     | __temp7     |
+| IFZ         |             | __temp8     | __label12   |
+| PRINT       |             | "Both po... |             |
+| JUMP        |             | __label13   |             |
+| LABEL       |             | __label12   |             |
+| PRINT       |             | "Both po... |             |
+| LABEL       |             | __label13   |             |
+| GT          | __temp9     | x           | 0           |
+| GT          | __temp10    | y           | 0           |
+| OR          | __temp11    | __temp9     | __temp10    |
+| IFZ         |             | __temp11    | __label14   |
+| PRINT       |             | "At leas... |             |
+| JUMP        |             | __label15   |             |
+| LABEL       |             | __label14   |             |
+| PRINT       |             | "At leas... |             |
+| LABEL       |             | __label15   |             |
+| LT          | __temp12    | x           | 0           |
+| LT          | __temp13    | y           | 0           |
+| AND         | __temp14    | __temp12    | __temp13    |
+| IFZ         |             | __temp14    | __label16   |
+| PRINT       |             | "Both ne... |             |
+| JUMP        |             | __label17   |             |
+| LABEL       |             | __label16   |             |
+| PRINT       |             | "Both ne... |             |
+| LABEL       |             | __label17   |             |
+| PRINT       |             | "\nMOD T... |             |
+| MOD         | __temp15    | x           | 2           |
+| EQ          | __temp16    | __temp15    | 0           |
+| IFZ         |             | __temp16    | __label18   |
+| PRINT       |             | "x is ev... |             |
+| JUMP        |             | __label19   |             |
+| LABEL       |             | __label18   |             |
+| PRINT       |             | "x is od... |             |
+| LABEL       |             | __label19   |             |
+| MOD         | __temp17    | y           | 3           |
+| EQ          | __temp18    | __temp17    | 0           |
+| IFZ         |             | __temp18    | __label20   |
+| PRINT       |             | "y divis... |             |
+| JUMP        |             | __label21   |             |
+| LABEL       |             | __label20   |             |
+| PRINT       |             | "y not d... |             |
+| LABEL       |             | __label21   |             |
+| PRINT       |             | "\nLoop ... |             |
+| PRINT       |             | counter     |             |
+| PRINT       |             | " times.\n" |             |
+| MOVE        | counterB... | counter     |             |
+| PRINT       |             | "While-D... |             |
+| LABEL       |             | __label22   |             |
+| LT          | __temp19    | 0           | counter     |
+| IFZ         |             | __temp19    | __label23   |
+| PRINT       |             | "Counter: " |             |
+| PRINT       |             | counter     |             |
+| PRINT       |             | "\n"        |             |
+| SUB         | __temp20    | counter     | 1           |
+| MOVE        | counter     | __temp20    |             |
+| JUMP        |             | __label22   |             |
+| LABEL       |             | __label23   |             |
+| PRINT       |             | "\nDo-Wh... |             |
+| MOVE        | counter     | counterB... |             |
+| LABEL       |             | __label24   |             |
+| PRINT       |             | "Counter: " |             |
+| PRINT       |             | counter     |             |
+| PRINT       |             | "\n"        |             |
+| SUB         | __temp21    | counter     | 1           |
+| MOVE        | counter     | __temp21    |             |
+| GT          | __temp22    | counter     | 0           |
+| IFZ         |             | __temp22    | __label25   |
+| JUMP        |             | __label24   |             |
+| LABEL       |             | __label25   |             |
+| PRINT       |             | "\nNeste... |             |
+| GT          | __temp23    | x           | 5           |
+| IFZ         |             | __temp23    | __label30   |
+| LT          | __temp24    | y           | 10          |
+| IFZ         |             | __temp24    | __label26   |
+| PRINT       |             | "x > 5 A... |             |
+| JUMP        |             | __label27   |             |
+| LABEL       |             | __label26   |             |
+| PRINT       |             | "x > 5 B... |             |
+| LABEL       |             | __label27   |             |
+| JUMP        |             | __label31   |             |
+| LABEL       |             | __label30   |             |
+| LT          | __temp25    | y           | 10          |
+| IFZ         |             | __temp25    | __label28   |
+| PRINT       |             | "x <= 5 ... |             |
+| JUMP        |             | __label29   |             |
+| LABEL       |             | __label28   |             |
+| PRINT       |             | "x <= 5 ... |             |
+| LABEL       |             | __label29   |             |
+| LABEL       |             | __label31   |             |
+| PRINT       |             | "\nIf Wi... |             |
+| GT          | __temp26    | x           | 0           |
+| IFZ         |             | __temp26    | __label32   |
+| PRINT       |             | "x is po... |             |
+| LABEL       |             | __label32   |             |
+| EQ          | __temp27    | y           | 0           |
+| IFZ         |             | __temp27    | __label34   |
+| PRINT       |             | "y is ze... |             |
+| LABEL       |             | __label34   |             |
+| RET         |             | 0           |             |
+| ENDFUN      |             | main        |             |
++-------------+-------------+-------------+-------------+

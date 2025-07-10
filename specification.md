@@ -2,17 +2,31 @@
 
 2025++1 is a simplified programming language inspired by C, designed specifically for educational purposes in compiler construction. The language provides fundamental programming features while remaining straightforward enough to implement a full compiler within the scope of a university course.
 
+## Notable Language Features
+
+- The language has a reversed internal representation for numerical literals.
+- Variables must be declared with a type before use and its initialization is mandatory.
+- Negative numbers can be read but can't be declared.
+- No pointers or memory management.
+- Only two data types are compatible: `int` and `byte`.
+- Limited scoping rules (closer to traditional C).
+- Programs must have a `main()` function as the entry point.
+
 ## Data Types
 
-- **byte**: 8-bit integer data type (for small numeric values)
-- **int**: Integer data type for general numeric values
+- **byte**: stores single characters (e.g., `'a'`, `'b'`, `'\n'`)
+- **int**: Integer data type for general numeric values (e.g., `123`, `-456`).
+
 - **real**: Floating-point data type, represented by a fraction (e.g., `5/7`)
+- **bool**: Boolean data type, can be `TRUE` or `FALSE`.
 
 ## Variables and Constants
 
-- Variables must be declared with a type before use.
 - Literals supported:
-- Integer literals (e.g., `123`, `001`)
+  - Character literals (e.g., `'a'`, `'\n'`)
+  - String literals (e.g., `"Hello, World!"`)
+  - Real literals (e.g., `3/4`, `1/2`)
+  - Integer literals (e.g., `123`, `001`)
 
 ## Arrays
 
@@ -33,9 +47,13 @@
 
     ```c
     if (condition) {
-            // statements
+        // statements
     } else {
-            // statements
+        // statements
+    }
+
+    if (condition) {
+        // statements
     }
     ```
 
@@ -43,11 +61,11 @@
 
     ```c
     while (expression) do {
-            // statements
+        // statements
     }
 
     do {
-            // statements
+        // statements
     } while (expression);
     ```
 
@@ -57,8 +75,8 @@
 - Example:
 
     ```c
-    int incn(int p, int n) {
-            return p + n;
+    int add(int a, int b) {
+        return a + b;
     }
     ```
 
@@ -95,11 +113,3 @@
     comment
     --/
     ```
-
-## Notable Language Features
-
-- No pointers or memory management.
-- No type conversion (each operation requires compatible types).
-- Limited scoping rules (closer to traditional C).
-- The language has a reversed internal representation for numerical literals.
-- Programs must have a `main()` function as the entry point.

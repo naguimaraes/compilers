@@ -33,18 +33,6 @@ target: $(PROJECT)
 
 .PHONY:
 
-assemble: $(PROJECT)
-	@mkdir -p output
-	@./$(PROJECT) $(PROJECT).2025++1 output/$(PROJECT)_symbol_table.txt output/$(PROJECT)_AST.txt output/$(PROJECT)_decompiled.txt output/$(PROJECT)_TAC.txt output/$(PROJECT).s
-	@echo "Compilation finished."
-	@echo "\nGenerating binary code:"
-	gcc output/$(PROJECT).s -o output/$(PROJECT).out
-	@echo "- Binary code saved at output/$(PROJECT).out"
-
-run: assemble
-	@echo "\nRunning the program:"
-	@./output/$(PROJECT).out
-
 .PHONY: test
 test: $(PROJECT)
 	@if [ -z "$(FILE)" ]; then \
@@ -96,6 +84,6 @@ clean:
 	@rm -rf $(PROJECT) lex.yy.cpp *.o .docker-build $(PROJECT).tgz *.output *.tgz *.tab.* *.xml *.html *.gv *_recompiled.txt output/*
 
 .PHONY: tgz
-tgz: clean
+tgz:
 	@touch $(PROJECT).tgz
-	@tar cvzf $(PROJECT).tgz Makefile ast.cpp ast.hpp main.cpp parser.ypp scanner.l symbol.cpp symbol.hpp verifications.cpp verifications.hpp tac.cpp tac.hpp asm.cpp asm.hpp relatorio.md output/ tests/
+	@tar cvzf $(PROJECT).tgz Makefile ast.cpp ast.hpp main.cpp parser.ypp scanner.l symbol.cpp symbol.hpp verifications.cpp verifications.hpp tac.cpp tac.hpp asm.cpp asm.hpp relatorio.md output/* tests/*

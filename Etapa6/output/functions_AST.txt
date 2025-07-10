@@ -1,0 +1,397 @@
+-------------- AST STRUCTURE MADE BY NATHAN GUIMARAES (334437) --------------
+PROGRAM
+  DECLARATION_LIST
+    VARIABLE_DECLARATION
+      INT
+      SYMBOL (symbol: var1)
+      LITERAL (symbol: 0)
+    DECLARATION_LIST
+      VARIABLE_DECLARATION
+        INT
+        SYMBOL (symbol: var2)
+        LITERAL (symbol: 0)
+      DECLARATION_LIST
+        FUNCTION_DECLARATION
+          INT
+          SYMBOL (symbol: main)
+          FORMAL_PARAMETERS
+          COMMAND
+            COMMAND_LIST
+              PRINT
+                LITERAL (symbol: "Value for var1: ")
+              COMMAND_LIST
+                READ
+                  SYMBOL (symbol: var1)
+                COMMAND_LIST
+                  PRINT
+                    LITERAL (symbol: "Value for var2: ")
+                  COMMAND_LIST
+                    READ
+                      SYMBOL (symbol: var2)
+                    COMMAND_LIST
+                      PRINT
+                        LITERAL (symbol: "Sum of var1 and var2: ")
+                          FUNCTION_CALL
+                            SYMBOL (symbol: sum)
+                            ARGUMENTS_LIST
+                              EXPRESSION_LIST
+                                SYMBOL (symbol: var1)
+                                SYMBOL (symbol: var2)
+                            LITERAL (symbol: "\n")
+                      COMMAND_LIST
+                        PRINT
+                          LITERAL (symbol: "Multiplication of var1 and var2: ")
+                            FUNCTION_CALL
+                              SYMBOL (symbol: multiply)
+                              ARGUMENTS_LIST
+                                EXPRESSION_LIST
+                                  SYMBOL (symbol: var1)
+                                  SYMBOL (symbol: var2)
+                              LITERAL (symbol: "\n")
+                        COMMAND_LIST
+                          IF
+                            LESS_THAN
+                              SYMBOL (symbol: var1)
+                              SYMBOL (symbol: var2)
+                            COMMAND
+                              COMMAND_LIST
+                                PRINT
+                                  LITERAL (symbol: "Subtraction, in modulo, of var1 and var2: ")
+                                    FUNCTION_CALL
+                                      SYMBOL (symbol: subtract)
+                                      ARGUMENTS_LIST
+                                        EXPRESSION_LIST
+                                          SYMBOL (symbol: var2)
+                                          SYMBOL (symbol: var1)
+                                      LITERAL (symbol: "\n")
+                                COMMAND_LIST
+                                  PRINT
+                                    LITERAL (symbol: "Remainder of division of var2 by var1: ")
+                                      FUNCTION_CALL
+                                        SYMBOL (symbol: remainder)
+                                        ARGUMENTS_LIST
+                                          EXPRESSION_LIST
+                                            SYMBOL (symbol: var2)
+                                            SYMBOL (symbol: var1)
+                                        LITERAL (symbol: "\n")
+                                  COMMAND_LIST
+                                    IF
+                                      EQUAL
+                                        SYMBOL (symbol: var1)
+                                        LITERAL (symbol: 0)
+                                      COMMAND
+                                        COMMAND_LIST
+                                          PRINT
+                                            LITERAL (symbol: "Division by zero is not allowed.\n")
+                                      ELSE
+                                        COMMAND
+                                          COMMAND_LIST
+                                            PRINT
+                                              LITERAL (symbol: "Division of var2 by var1: ")
+                                                FUNCTION_CALL
+                                                  SYMBOL (symbol: divide)
+                                                  ARGUMENTS_LIST
+                                                    EXPRESSION_LIST
+                                                      SYMBOL (symbol: var2)
+                                                      SYMBOL (symbol: var1)
+                                                  LITERAL (symbol: "\n")
+                                    else
+                                      EQUAL
+                                        SYMBOL (symbol: var1)
+                                        LITERAL (symbol: 0)
+                                      COMMAND
+                                        COMMAND_LIST
+                                          PRINT
+                                            LITERAL (symbol: "Division by zero is not allowed.\n")
+                                      ELSE
+                                        COMMAND
+                                          COMMAND_LIST
+                                            PRINT
+                                              LITERAL (symbol: "Division of var2 by var1: ")
+                                                FUNCTION_CALL
+                                                  SYMBOL (symbol: divide)
+                                                  ARGUMENTS_LIST
+                                                    EXPRESSION_LIST
+                                                      SYMBOL (symbol: var2)
+                                                      SYMBOL (symbol: var1)
+                                                  LITERAL (symbol: "\n")
+                            ELSE
+                              COMMAND
+                                COMMAND_LIST
+                                  PRINT
+                                    LITERAL (symbol: "Subtraction, in modulo, of var1 and var2: ")
+                                      FUNCTION_CALL
+                                        SYMBOL (symbol: subtract)
+                                        ARGUMENTS_LIST
+                                          EXPRESSION_LIST
+                                            SYMBOL (symbol: var1)
+                                            SYMBOL (symbol: var2)
+                                        LITERAL (symbol: "\n")
+                                  COMMAND_LIST
+                                    PRINT
+                                      LITERAL (symbol: "Remainder of division of var1 by var2: ")
+                                        FUNCTION_CALL
+                                          SYMBOL (symbol: remainder)
+                                          ARGUMENTS_LIST
+                                            EXPRESSION_LIST
+                                              SYMBOL (symbol: var1)
+                                              SYMBOL (symbol: var2)
+                                          LITERAL (symbol: "\n")
+                                    COMMAND_LIST
+                                      IF
+                                        EQUAL
+                                          SYMBOL (symbol: var2)
+                                          LITERAL (symbol: 0)
+                                        COMMAND
+                                          COMMAND_LIST
+                                            PRINT
+                                              LITERAL (symbol: "Division by zero is not allowed.\n")
+                                        ELSE
+                                          COMMAND
+                                            COMMAND_LIST
+                                              PRINT
+                                                LITERAL (symbol: "Division of var1 by var2: ")
+                                                  FUNCTION_CALL
+                                                    SYMBOL (symbol: divide)
+                                                    ARGUMENTS_LIST
+                                                      EXPRESSION_LIST
+                                                        SYMBOL (symbol: var1)
+                                                        SYMBOL (symbol: var2)
+                                                    LITERAL (symbol: "\n")
+                                      else
+                                        EQUAL
+                                          SYMBOL (symbol: var2)
+                                          LITERAL (symbol: 0)
+                                        COMMAND
+                                          COMMAND_LIST
+                                            PRINT
+                                              LITERAL (symbol: "Division by zero is not allowed.\n")
+                                        ELSE
+                                          COMMAND
+                                            COMMAND_LIST
+                                              PRINT
+                                                LITERAL (symbol: "Division of var1 by var2: ")
+                                                  FUNCTION_CALL
+                                                    SYMBOL (symbol: divide)
+                                                    ARGUMENTS_LIST
+                                                      EXPRESSION_LIST
+                                                        SYMBOL (symbol: var1)
+                                                        SYMBOL (symbol: var2)
+                                                    LITERAL (symbol: "\n")
+                          else
+                            LESS_THAN
+                              SYMBOL (symbol: var1)
+                              SYMBOL (symbol: var2)
+                            COMMAND
+                              COMMAND_LIST
+                                PRINT
+                                  LITERAL (symbol: "Subtraction, in modulo, of var1 and var2: ")
+                                    FUNCTION_CALL
+                                      SYMBOL (symbol: subtract)
+                                      ARGUMENTS_LIST
+                                        EXPRESSION_LIST
+                                          SYMBOL (symbol: var2)
+                                          SYMBOL (symbol: var1)
+                                      LITERAL (symbol: "\n")
+                                COMMAND_LIST
+                                  PRINT
+                                    LITERAL (symbol: "Remainder of division of var2 by var1: ")
+                                      FUNCTION_CALL
+                                        SYMBOL (symbol: remainder)
+                                        ARGUMENTS_LIST
+                                          EXPRESSION_LIST
+                                            SYMBOL (symbol: var2)
+                                            SYMBOL (symbol: var1)
+                                        LITERAL (symbol: "\n")
+                                  COMMAND_LIST
+                                    IF
+                                      EQUAL
+                                        SYMBOL (symbol: var1)
+                                        LITERAL (symbol: 0)
+                                      COMMAND
+                                        COMMAND_LIST
+                                          PRINT
+                                            LITERAL (symbol: "Division by zero is not allowed.\n")
+                                      ELSE
+                                        COMMAND
+                                          COMMAND_LIST
+                                            PRINT
+                                              LITERAL (symbol: "Division of var2 by var1: ")
+                                                FUNCTION_CALL
+                                                  SYMBOL (symbol: divide)
+                                                  ARGUMENTS_LIST
+                                                    EXPRESSION_LIST
+                                                      SYMBOL (symbol: var2)
+                                                      SYMBOL (symbol: var1)
+                                                  LITERAL (symbol: "\n")
+                                    else
+                                      EQUAL
+                                        SYMBOL (symbol: var1)
+                                        LITERAL (symbol: 0)
+                                      COMMAND
+                                        COMMAND_LIST
+                                          PRINT
+                                            LITERAL (symbol: "Division by zero is not allowed.\n")
+                                      ELSE
+                                        COMMAND
+                                          COMMAND_LIST
+                                            PRINT
+                                              LITERAL (symbol: "Division of var2 by var1: ")
+                                                FUNCTION_CALL
+                                                  SYMBOL (symbol: divide)
+                                                  ARGUMENTS_LIST
+                                                    EXPRESSION_LIST
+                                                      SYMBOL (symbol: var2)
+                                                      SYMBOL (symbol: var1)
+                                                  LITERAL (symbol: "\n")
+                            ELSE
+                              COMMAND
+                                COMMAND_LIST
+                                  PRINT
+                                    LITERAL (symbol: "Subtraction, in modulo, of var1 and var2: ")
+                                      FUNCTION_CALL
+                                        SYMBOL (symbol: subtract)
+                                        ARGUMENTS_LIST
+                                          EXPRESSION_LIST
+                                            SYMBOL (symbol: var1)
+                                            SYMBOL (symbol: var2)
+                                        LITERAL (symbol: "\n")
+                                  COMMAND_LIST
+                                    PRINT
+                                      LITERAL (symbol: "Remainder of division of var1 by var2: ")
+                                        FUNCTION_CALL
+                                          SYMBOL (symbol: remainder)
+                                          ARGUMENTS_LIST
+                                            EXPRESSION_LIST
+                                              SYMBOL (symbol: var1)
+                                              SYMBOL (symbol: var2)
+                                          LITERAL (symbol: "\n")
+                                    COMMAND_LIST
+                                      IF
+                                        EQUAL
+                                          SYMBOL (symbol: var2)
+                                          LITERAL (symbol: 0)
+                                        COMMAND
+                                          COMMAND_LIST
+                                            PRINT
+                                              LITERAL (symbol: "Division by zero is not allowed.\n")
+                                        ELSE
+                                          COMMAND
+                                            COMMAND_LIST
+                                              PRINT
+                                                LITERAL (symbol: "Division of var1 by var2: ")
+                                                  FUNCTION_CALL
+                                                    SYMBOL (symbol: divide)
+                                                    ARGUMENTS_LIST
+                                                      EXPRESSION_LIST
+                                                        SYMBOL (symbol: var1)
+                                                        SYMBOL (symbol: var2)
+                                                    LITERAL (symbol: "\n")
+                                      else
+                                        EQUAL
+                                          SYMBOL (symbol: var2)
+                                          LITERAL (symbol: 0)
+                                        COMMAND
+                                          COMMAND_LIST
+                                            PRINT
+                                              LITERAL (symbol: "Division by zero is not allowed.\n")
+                                        ELSE
+                                          COMMAND
+                                            COMMAND_LIST
+                                              PRINT
+                                                LITERAL (symbol: "Division of var1 by var2: ")
+                                                  FUNCTION_CALL
+                                                    SYMBOL (symbol: divide)
+                                                    ARGUMENTS_LIST
+                                                      EXPRESSION_LIST
+                                                        SYMBOL (symbol: var1)
+                                                        SYMBOL (symbol: var2)
+                                                    LITERAL (symbol: "\n")
+                          COMMAND_LIST
+                            RETURN
+                              LITERAL (symbol: 0)
+        DECLARATION_LIST
+          FUNCTION_DECLARATION
+            INT
+            SYMBOL (symbol: sum)
+            FORMAL_PARAMETERS
+              PARAMETERS_LIST
+                INT
+                SYMBOL (symbol: a)
+                PARAMETERS_LIST
+                  INT
+                  SYMBOL (symbol: b)
+            COMMAND
+              COMMAND_LIST
+                RETURN
+                  ADD
+                    SYMBOL (symbol: a)
+                    SYMBOL (symbol: b)
+          DECLARATION_LIST
+            FUNCTION_DECLARATION
+              INT
+              SYMBOL (symbol: subtract)
+              FORMAL_PARAMETERS
+                PARAMETERS_LIST
+                  INT
+                  SYMBOL (symbol: i)
+                  PARAMETERS_LIST
+                    INT
+                    SYMBOL (symbol: j)
+              COMMAND
+                COMMAND_LIST
+                  RETURN
+                    SUBTRACT
+                      SYMBOL (symbol: i)
+                      SYMBOL (symbol: j)
+            DECLARATION_LIST
+              FUNCTION_DECLARATION
+                INT
+                SYMBOL (symbol: multiply)
+                FORMAL_PARAMETERS
+                  PARAMETERS_LIST
+                    INT
+                    SYMBOL (symbol: c)
+                    PARAMETERS_LIST
+                      INT
+                      SYMBOL (symbol: d)
+                COMMAND
+                  COMMAND_LIST
+                    RETURN
+                      MULTIPLY
+                        SYMBOL (symbol: c)
+                        SYMBOL (symbol: d)
+              DECLARATION_LIST
+                FUNCTION_DECLARATION
+                  INT
+                  SYMBOL (symbol: divide)
+                  FORMAL_PARAMETERS
+                    PARAMETERS_LIST
+                      INT
+                      SYMBOL (symbol: e)
+                      PARAMETERS_LIST
+                        INT
+                        SYMBOL (symbol: f)
+                  COMMAND
+                    COMMAND_LIST
+                      RETURN
+                        DIVIDE
+                          SYMBOL (symbol: e)
+                          SYMBOL (symbol: f)
+                DECLARATION_LIST
+                  FUNCTION_DECLARATION
+                    INT
+                    SYMBOL (symbol: remainder)
+                    FORMAL_PARAMETERS
+                      PARAMETERS_LIST
+                        INT
+                        SYMBOL (symbol: g)
+                        PARAMETERS_LIST
+                          INT
+                          SYMBOL (symbol: h)
+                    COMMAND
+                      COMMAND_LIST
+                        RETURN
+                          MODULO
+                            SYMBOL (symbol: g)
+                            SYMBOL (symbol: h)

@@ -1,0 +1,20 @@
++-------------------------------------------------------------------------------------------+
+|                     SYMBOL TABLE MADE BY NATHAN GUIMARAES (334437)                        |
++--------------------+--------------------+--------------------+--------------------+-------+
+| LEXEME             | TYPE               | DATA TYPE          | IDENTIFIER TYPE    | LINE  |
++--------------------+--------------------+--------------------+--------------------+-------+
+| "Enter an inte...  | LIT_STRING         | STRING             | LITERAL            | 8     |
+| "Entering an i...  | LIT_STRING         | STRING             | LITERAL            | 6     |
+| "Exited the lo...  | LIT_STRING         | STRING             | LITERAL            | 12    |
+| "Read value: "     | LIT_STRING         | STRING             | LITERAL            | 10    |
+| "\n"               | LIT_STRING         | STRING             | LITERAL            | 10    |
+| 'a'                | LIT_CHAR           | CHAR               | SCALAR             | 2     |
+| 0                  | LIT_INT            | INT                | SCALAR             | 1     |
+| 4                  | LIT_INT            | INT                | SCALAR             | 7     |
+| __label0           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label1           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __temp0            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| charTest           | TK_IDENTIFIER      | INT                | VARIABLE           | 2     |
+| main               | TK_IDENTIFIER      | INT                | FUNCTION           | 4     |
+| readVarInt         | TK_IDENTIFIER      | INT                | VARIABLE           | 1     |
++--------------------+--------------------+--------------------+--------------------+-------+

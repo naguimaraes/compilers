@@ -1,0 +1,108 @@
++-------------------------------------------------------+
+|       TAC LIST MADE BY NATHAN GUIMARAES (334437)      |
++-------------+-------------+-------------+-------------+
+| OPERATION   | RESULT      | OPERAND1    | OPERAND2    |
++-------------+-------------+-------------+-------------+
+| INIT        | var1        | 0           |             |
+| INIT        | var2        | 0           |             |
+| BEGINFUN    |             | main        |             |
+| PRINT       |             | "Value f... |             |
+| READ        | var1        |             |             |
+| PRINT       |             | "Value f... |             |
+| READ        | var2        |             |             |
+| PRINT       |             | "Sum of ... |             |
+| ARG         |             | "\n"        |             |
+| ARG         |             | var1        |             |
+| ARG         |             | var2        |             |
+| CALL        | __temp0     | sum         |             |
+| PRINT       |             | __temp0     |             |
+| PRINT       |             | "\n"        |             |
+| PRINT       |             | "Multipl... |             |
+| ARG         |             | "\n"        |             |
+| ARG         |             | var1        |             |
+| ARG         |             | var2        |             |
+| CALL        | __temp1     | multiply    |             |
+| PRINT       |             | __temp1     |             |
+| PRINT       |             | "\n"        |             |
+| LT          | __temp2     | var1        | var2        |
+| IFZ         |             | __temp2     | __label4    |
+| PRINT       |             | "Subtrac... |             |
+| ARG         |             | "\n"        |             |
+| ARG         |             | var2        |             |
+| ARG         |             | var1        |             |
+| CALL        | __temp3     | subtract    |             |
+| PRINT       |             | __temp3     |             |
+| PRINT       |             | "\n"        |             |
+| PRINT       |             | "Remaind... |             |
+| ARG         |             | "\n"        |             |
+| ARG         |             | var2        |             |
+| ARG         |             | var1        |             |
+| CALL        | __temp4     | remainder   |             |
+| PRINT       |             | __temp4     |             |
+| PRINT       |             | "\n"        |             |
+| EQ          | __temp5     | var1        | 0           |
+| IFZ         |             | __temp5     | __label0    |
+| PRINT       |             | "Divisio... |             |
+| JUMP        |             | __label1    |             |
+| LABEL       |             | __label0    |             |
+| PRINT       |             | "Divisio... |             |
+| ARG         |             | "\n"        |             |
+| ARG         |             | var2        |             |
+| ARG         |             | var1        |             |
+| CALL        | __temp6     | divide      |             |
+| PRINT       |             | __temp6     |             |
+| PRINT       |             | "\n"        |             |
+| LABEL       |             | __label1    |             |
+| JUMP        |             | __label5    |             |
+| LABEL       |             | __label4    |             |
+| PRINT       |             | "Subtrac... |             |
+| ARG         |             | "\n"        |             |
+| ARG         |             | var1        |             |
+| ARG         |             | var2        |             |
+| CALL        | __temp7     | subtract    |             |
+| PRINT       |             | __temp7     |             |
+| PRINT       |             | "\n"        |             |
+| PRINT       |             | "Remaind... |             |
+| ARG         |             | "\n"        |             |
+| ARG         |             | var1        |             |
+| ARG         |             | var2        |             |
+| CALL        | __temp8     | remainder   |             |
+| PRINT       |             | __temp8     |             |
+| PRINT       |             | "\n"        |             |
+| EQ          | __temp9     | var2        | 0           |
+| IFZ         |             | __temp9     | __label2    |
+| PRINT       |             | "Divisio... |             |
+| JUMP        |             | __label3    |             |
+| LABEL       |             | __label2    |             |
+| PRINT       |             | "Divisio... |             |
+| ARG         |             | "\n"        |             |
+| ARG         |             | var1        |             |
+| ARG         |             | var2        |             |
+| CALL        | __temp10    | divide      |             |
+| PRINT       |             | __temp10    |             |
+| PRINT       |             | "\n"        |             |
+| LABEL       |             | __label3    |             |
+| LABEL       |             | __label5    |             |
+| RET         |             | 0           |             |
+| ENDFUN      |             | main        |             |
+| BEGINFUN    |             | sum         |             |
+| ADD         | __temp11    | a           | b           |
+| RET         |             | __temp11    |             |
+| ENDFUN      |             | sum         |             |
+| BEGINFUN    |             | subtract    |             |
+| SUB         | __temp12    | i           | j           |
+| RET         |             | __temp12    |             |
+| ENDFUN      |             | subtract    |             |
+| BEGINFUN    |             | multiply    |             |
+| MUL         | __temp13    | c           | d           |
+| RET         |             | __temp13    |             |
+| ENDFUN      |             | multiply    |             |
+| BEGINFUN    |             | divide      |             |
+| DIV         | __temp14    | e           | f           |
+| RET         |             | __temp14    |             |
+| ENDFUN      |             | divide      |             |
+| BEGINFUN    |             | remainder   |             |
+| MOD         | __temp15    | g           | h           |
+| RET         |             | __temp15    |             |
+| ENDFUN      |             | remainder   |             |
++-------------+-------------+-------------+-------------+

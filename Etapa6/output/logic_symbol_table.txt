@@ -1,0 +1,123 @@
++-------------------------------------------------------------------------------------------+
+|                     SYMBOL TABLE MADE BY NATHAN GUIMARAES (334437)                        |
++--------------------+--------------------+--------------------+--------------------+-------+
+| LEXEME             | TYPE               | DATA TYPE          | IDENTIFIER TYPE    | LINE  |
++--------------------+--------------------+--------------------+--------------------+-------+
+| " times.\n"        | LIT_STRING         | STRING             | LITERAL            | 36    |
+| "At least one ...  | LIT_STRING         | STRING             | LITERAL            | 27    |
+| "At least one ...  | LIT_STRING         | STRING             | LITERAL            | 27    |
+| "Both negative...  | LIT_STRING         | STRING             | LITERAL            | 28    |
+| "Both negative...  | LIT_STRING         | STRING             | LITERAL            | 28    |
+| "Both positive...  | LIT_STRING         | STRING             | LITERAL            | 26    |
+| "Both positive...  | LIT_STRING         | STRING             | LITERAL            | 26    |
+| "Counter: "        | LIT_STRING         | STRING             | LITERAL            | 42    |
+| "Enter a value...  | LIT_STRING         | STRING             | LITERAL            | 12    |
+| "Enter a value...  | LIT_STRING         | STRING             | LITERAL            | 8     |
+| "Enter a value...  | LIT_STRING         | STRING             | LITERAL            | 10    |
+| "While-Do Test...  | LIT_STRING         | STRING             | LITERAL            | 39    |
+| "\n"               | LIT_STRING         | STRING             | LITERAL            | 42    |
+| "\nComparison ...  | LIT_STRING         | STRING             | LITERAL            | 16    |
+| "\nDo-While Te...  | LIT_STRING         | STRING             | LITERAL            | 47    |
+| "\nIf Without ...  | LIT_STRING         | STRING             | LITERAL            | 71    |
+| "\nLogical Tes...  | LIT_STRING         | STRING             | LITERAL            | 25    |
+| "\nLoop tests ...  | LIT_STRING         | STRING             | LITERAL            | 36    |
+| "\nMOD Tests:\n"   | LIT_STRING         | STRING             | LITERAL            | 31    |
+| "\nNested Cond...  | LIT_STRING         | STRING             | LITERAL            | 55    |
+| "x != y: FALSE\n"  | LIT_STRING         | STRING             | LITERAL            | 22    |
+| "x != y: TRUE\n"   | LIT_STRING         | STRING             | LITERAL            | 22    |
+| "x < y: FALSE\n"   | LIT_STRING         | STRING             | LITERAL            | 18    |
+| "x < y: TRUE\n"    | LIT_STRING         | STRING             | LITERAL            | 18    |
+| "x <= 5 AND y ...  | LIT_STRING         | STRING             | LITERAL            | 66    |
+| "x <= 5 BUT y ...  | LIT_STRING         | STRING             | LITERAL            | 64    |
+| "x <= y: FALSE\n"  | LIT_STRING         | STRING             | LITERAL            | 20    |
+| "x <= y: TRUE\n"   | LIT_STRING         | STRING             | LITERAL            | 20    |
+| "x == y: FALSE\n"  | LIT_STRING         | STRING             | LITERAL            | 21    |
+| "x == y: TRUE\n"   | LIT_STRING         | STRING             | LITERAL            | 21    |
+| "x > 5 AND y <...  | LIT_STRING         | STRING             | LITERAL            | 58    |
+| "x > 5 BUT y >...  | LIT_STRING         | STRING             | LITERAL            | 60    |
+| "x > y: FALSE\n"   | LIT_STRING         | STRING             | LITERAL            | 17    |
+| "x > y: TRUE\n"    | LIT_STRING         | STRING             | LITERAL            | 17    |
+| "x >= y: FALSE\n"  | LIT_STRING         | STRING             | LITERAL            | 19    |
+| "x >= y: TRUE\n"   | LIT_STRING         | STRING             | LITERAL            | 19    |
+| "x is even\n"      | LIT_STRING         | STRING             | LITERAL            | 32    |
+| "x is odd\n"       | LIT_STRING         | STRING             | LITERAL            | 32    |
+| "x is positive\n"  | LIT_STRING         | STRING             | LITERAL            | 73    |
+| "y divisible b...  | LIT_STRING         | STRING             | LITERAL            | 33    |
+| "y is zero\n"      | LIT_STRING         | STRING             | LITERAL            | 77    |
+| "y not divisib...  | LIT_STRING         | STRING             | LITERAL            | 33    |
+| 0                  | LIT_INT            | INT                | SCALAR             | 1     |
+| 1                  | LIT_INT            | INT                | SCALAR             | 43    |
+| 10                 | LIT_INT            | INT                | SCALAR             | 57    |
+| 2                  | LIT_INT            | INT                | SCALAR             | 32    |
+| 3                  | LIT_INT            | INT                | SCALAR             | 33    |
+| 5                  | LIT_INT            | INT                | SCALAR             | 56    |
+| __label0           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label1           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label10          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label11          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label12          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label13          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label14          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label15          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label16          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label17          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label18          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label19          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label2           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label20          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label21          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label22          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label23          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label24          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label25          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label26          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label27          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label28          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label29          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label3           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label30          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label31          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label32          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label33          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label34          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label35          | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label4           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label5           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label6           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label7           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label8           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __label9           | INTERNAL           | ADDRESS            | LABEL              | 1     |
+| __temp0            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp1            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp10           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp11           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp12           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp13           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp14           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp15           | INTERNAL           | INT                | TEMP               | 1     |
+| __temp16           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp17           | INTERNAL           | INT                | TEMP               | 1     |
+| __temp18           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp19           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp2            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp20           | INTERNAL           | INT                | TEMP               | 1     |
+| __temp21           | INTERNAL           | INT                | TEMP               | 1     |
+| __temp22           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp23           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp24           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp25           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp26           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp27           | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp3            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp4            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp5            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp6            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp7            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp8            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| __temp9            | INTERNAL           | BOOLEAN            | TEMP               | 1     |
+| counter            | TK_IDENTIFIER      | INT                | VARIABLE           | 3     |
+| counterBuffer      | TK_IDENTIFIER      | INT                | VARIABLE           | 4     |
+| main               | TK_IDENTIFIER      | INT                | FUNCTION           | 6     |
+| x                  | TK_IDENTIFIER      | INT                | VARIABLE           | 1     |
+| y                  | TK_IDENTIFIER      | INT                | VARIABLE           | 2     |
++--------------------+--------------------+--------------------+--------------------+-------+

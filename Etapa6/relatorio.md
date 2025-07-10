@@ -13,7 +13,7 @@ Os tipos de dados `int` e `boolean` foram implementados completamente, com todas
 
 ## Compilação do Projeto
 
-Rodando o comando `make` ou `make etapa6`, o projeto foi compilado. Utilizando o comando `time make`, o tempo de compilação foi medido, resultando em aproximadamente 3 segundos:
+Rodando o comando `make` ou `make etapa6`, o projeto foi compilado. Utilizando o comando `time make` em um computador com o processador AMD Ryzen 7 5800X, o tempo de compilação foi medido, resultando em aproximadamente 2.5 segundos:
 
 ``` bash
 nathan@nathan-casa:~/Documents/compilers/Etapa6$ time make
@@ -21,7 +21,6 @@ bison -d -g -v --html parser.ypp
 flex -o lex.yy.cpp scanner.l 
 g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o lex.yy.o lex.yy.cpp
 g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o parser.tab.o parser.tab.cpp
-g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o ast.o ast.cpp
 g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o symbol.o symbol.cpp
 g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o verifications.o verifications.cpp
 g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o tac.o tac.cpp
@@ -29,9 +28,9 @@ g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o asm.o asm
 g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o main.o main.cpp
 g++ lex.yy.o parser.tab.o ast.o symbol.o verifications.o tac.o asm.o main.o -o etapa6
 
-real    0m3.034s
-user    0m2.604s
-sys     0m0.429s
+real    0m2.528s
+user    0m2.159s
+sys     0m0.370s
 ```
 
 Sendo o arquivo `asm.cpp` o mais demorado a se compilar. Note a compilação de todos os códigos-fonte com as flags `-Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG` e que nenhum erro ou aviso foi gerado durante toda a compilação.
@@ -167,27 +166,29 @@ Por algum motivo, a primeira posição do vetor real não pode ser lida. Tentei 
 
 ### Teste 4: Funções no Arquivo `tests/functions.2025++1`
 
-O código é um exemplo de funções, onde o programa define uma função que lê dois inteiros e imprime a soma, multiplicação e divisão deles. A execução se deu como:
+O código é um exemplo de funções, no qual o programa faz diversas operações com vetores, como calcular a soma, encontrar o máximo e mínimo, criar um vetor dobrado e inverter a ordem dos elementos. A execução se deu como:
 
 ```bash
-
-nathan@nathan-casa:~/Documents/compilers/Etapa6$ make test FILE=tests/functions.2025++1 
-The file had 33 lines in total.
-- AST structure saved to file "output/functions_AST.txt".
-- Decompiled code saved to file "output/functions_decompiled.txt".
+nathan@nathan-casa:~/Documents/compilers/Etapa6$ make test FILE=tests/vectors.2025++1 
+The file had 70 lines in total.
+- AST structure saved to file "output/vectors_AST.txt".
+- Decompiled code saved to file "output/vectors_decompiled.txt".
 Semantic analysis completed successfully - no errors found.
-- Symbol table saved to file "output/functions_symbol_table.txt".
-- TAC list saved to file "output/functions_TAC.txt".
-- Assembly code saved to file "output/functions.s".
+- TAC list saved to file "output/vectors_TAC.txt".
+- Symbol table saved to file "output/vectors_symbol_table.txt".
+- Assembly code saved to file "output/vectors.s".
 
 Generating binary code:
-- Binary code saved at output/functions.out
+- Binary code saved at output/vectors.out
 
 Running the program:
-Valor para var1: 10
-Valor para var2: 2
-Soma de var1 e var2: 12
-Multiplicacao de var1 e var2: 20
-Divisao de var1 por var2: 5
-- Test completed successfully for functions.
+Original vector: 1 2 3 4 5 6 7 8 9 10 
+Calculating sum...
+Sum: 55
+Finding max and min...
+Max: 10, Min: 1
+Creating doubled vector...
+Doubled vector: 2 4 6 8 10 12 14 16 18 20 
+Reverse order: 10 9 8 7 6 5 4 3 2 1 
+- Test completed successfully for vectors.
 ```

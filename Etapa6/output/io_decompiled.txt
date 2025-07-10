@@ -1,0 +1,15 @@
+// Decompiled 2025++1 code from AST
+// Made by Nathan Guimaraes (334437)
+
+int readVarInt = 0;
+int charTest = 'a';
+int main() {
+	print "Entering an infinite loop to read integers, please enter 4 to exit: \n" ;
+	while(readVarInt != 4) do	{
+		print "Enter an integer: " ;
+		read readVarInt;
+		print "Read value: " readVarInt "\n" ;
+	}
+	print "Exited the loop.\n" ;
+	return 0;
+}

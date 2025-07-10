@@ -1,0 +1,23 @@
++-------------------------------------------------------+
+|       TAC LIST MADE BY NATHAN GUIMARAES (334437)      |
++-------------+-------------+-------------+-------------+
+| OPERATION   | RESULT      | OPERAND1    | OPERAND2    |
++-------------+-------------+-------------+-------------+
+| INIT        | readVarInt  | 0           |             |
+| INIT        | charTest    | 'a'         |             |
+| BEGINFUN    |             | main        |             |
+| PRINT       |             | "Enterin... |             |
+| LABEL       |             | __label0    |             |
+| NE          | __temp0     | readVarInt  | 4           |
+| IFZ         |             | __temp0     | __label1    |
+| PRINT       |             | "Enter a... |             |
+| READ        | readVarInt  |             |             |
+| PRINT       |             | "Read va... |             |
+| PRINT       |             | readVarInt  |             |
+| PRINT       |             | "\n"        |             |
+| JUMP        |             | __label0    |             |
+| LABEL       |             | __label1    |             |
+| PRINT       |             | "Exited ... |             |
+| RET         |             | 0           |             |
+| ENDFUN      |             | main        |             |
++-------------+-------------+-------------+-------------+

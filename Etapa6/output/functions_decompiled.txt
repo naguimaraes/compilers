@@ -1,0 +1,57 @@
+// Decompiled 2025++1 code from AST
+// Made by Nathan Guimaraes (334437)
+
+int var1 = 0;
+int var2 = 0;
+int main() {
+	print "Value for var1: " ;
+	read var1;
+	print "Value for var2: " ;
+	read var2;
+	print "Sum of var1 and var2: " ;
+	print "Multiplication of var1 and var2: " ;
+	if ((var1 < var2))	{
+		print "Subtraction, in modulo, of var1 and var2: " ;
+		print "Remainder of division of var2 by var1: " ;
+		if ((var1 == 0))		{
+			print "Division by zero is not allowed.\n" ;
+		}
+		else
+			{
+				print "Division of var2 by var1: " ;
+			}
+	}
+	else
+		{
+			print "Subtraction, in modulo, of var1 and var2: " ;
+			print "Remainder of division of var1 by var2: " ;
+			if ((var2 == 0))			{
+				print "Division by zero is not allowed.\n" ;
+			}
+			else
+				{
+					print "Division of var1 by var2: " ;
+				}
+		}
+	return 0;
+}
+
+int sum(int a, int b) {
+	return (a + b);
+}
+
+int subtract(int i, int j) {
+	return (i - j);
+}
+
+int multiply(int c, int d) {
+	return (c * d);
+}
+
+int divide(int e, int f) {
+	return (e / f);
+}
+
+int remainder(int g, int h) {
+	return (g % h);
+}

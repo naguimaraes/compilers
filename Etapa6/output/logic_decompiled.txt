@@ -1,0 +1,104 @@
+// Decompiled 2025++1 code from AST
+// Made by Nathan Guimaraes (334437)
+
+int x = 0;
+int y = 0;
+int counter = 0;
+int counterBuffer = 0;
+int main() {
+	print "Enter a value for x: " ;
+	read x;
+	print "Enter a value for y: " ;
+	read y;
+	print "Enter a value for counter: " ;
+	read counter;
+	print "\nComparison Tests:\n" ;
+	if ((x > y))
+		print "x > y: TRUE\n" ;
+	else
+		print "x > y: FALSE\n" ;
+	if ((x < y))
+		print "x < y: TRUE\n" ;
+	else
+		print "x < y: FALSE\n" ;
+	if ((x >= y))
+		print "x >= y: TRUE\n" ;
+	else
+		print "x >= y: FALSE\n" ;
+	if ((x <= y))
+		print "x <= y: TRUE\n" ;
+	else
+		print "x <= y: FALSE\n" ;
+	if ((x == y))
+		print "x == y: TRUE\n" ;
+	else
+		print "x == y: FALSE\n" ;
+	if ((x != y))
+		print "x != y: TRUE\n" ;
+	else
+		print "x != y: FALSE\n" ;
+	print "\nLogical Tests:\n" ;
+	if (((x > 0) & (y > 0)))
+		print "Both positive: TRUE\n" ;
+	else
+		print "Both positive: FALSE\n" ;
+	if (((x > 0) | (y > 0)))
+		print "At least one positive: TRUE\n" ;
+	else
+		print "At least one positive: FALSE\n" ;
+	if (((x < 0) & (y < 0)))
+		print "Both negative: TRUE\n" ;
+	else
+		print "Both negative: FALSE\n" ;
+	print "\nMOD Tests:\n" ;
+	if (((x % 2) == 0))
+		print "x is even\n" ;
+	else
+		print "x is odd\n" ;
+	if (((y % 3) == 0))
+		print "y divisible by 3\n" ;
+	else
+		print "y not divisible by 3\n" ;
+	print "\nLoop tests should repeat " counter " times.\n" ;
+	counterBuffer = counter;
+	print "While-Do Test:\n" ;
+	while(0 < counter) do	{
+		print "Counter: " counter "\n" ;
+		counter = (counter - 1);
+	}
+	print "\nDo-While Test:\n" ;
+	counter = counterBuffer;
+	do	{
+		print "Counter: " counter "\n" ;
+		counter = (counter - 1);
+	}
+	while(counter > 0);
+	print "\nNested Conditions:\n" ;
+	if ((x > 5))	{
+		if ((y < 01))		{
+			print "x > 5 AND y < 10\n" ;
+		}
+		else
+			{
+				print "x > 5 BUT y >= 10\n" ;
+			}
+	}
+	else
+		{
+			if ((y < 01))			{
+				print "x <= 5 BUT y < 10\n" ;
+			}
+			else
+				{
+					print "x <= 5 AND y >= 10\n" ;
+				}
+		}
+	print "\nIf Without Else Test:\n" ;
+	if ((x > 0))	{
+		print "x is positive\n" ;
+	}
+	if ((y == 0))	{
+		print "y is zero\n" ;
+	}
+	return 0;
+}
