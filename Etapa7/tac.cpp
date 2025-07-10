@@ -77,6 +77,14 @@ void TAC::setNext(TAC* next) {
     this->next = next;
 }
 
+void TAC::setOp1(Symbol* op1) {
+    this->operand1 = op1;
+}
+
+void TAC::setOp2(Symbol* op2) {
+    this->operand2 = op2;
+}
+
 std::string truncateString(const std::string& str, size_t maxWidth) {
     if (str.length() <= maxWidth) {
         return str;

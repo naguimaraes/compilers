@@ -33,11 +33,11 @@ target: $(PROJECT)
 
 .PHONY:
 
-.PHONY: test
-test: $(PROJECT)
+.PHONY: optimizer
+optimizer: $(PROJECT)
 	@if [ -z "$(FILE)" ]; then \
-		echo "Usage: make test FILE=<input_file>"; \
-		echo "Example: make test FILE=tests/io.2025++1"; \
+		echo "Usage: make optimizer FILE=<input_file>"; \
+		echo "Example: make optimizer FILE=tests/io.2025++1"; \
 		exit 1; \
 	fi
 	@if [ ! -f "$(FILE)" ]; then \
@@ -48,21 +48,26 @@ test: $(PROJECT)
 	@BASENAME=$$(basename "$(FILE)" .2025++1); \
 	./$(PROJECT) "$(FILE)" "output/$${BASENAME}_symbol_table.txt" "output/$${BASENAME}_AST.txt" "output/$${BASENAME}_decompiled.txt" "output/$${BASENAME}_TAC.txt" "output/$${BASENAME}.s"; \
 	if [ $$? -eq 0 ]; then \
-		echo "\nGenerating binary code:"; \
+		echo "\nGenerating original binary code:"; \
 		gcc -o "output/$${BASENAME}.out" "output/$${BASENAME}.s"; \
 		if [ $$? -eq 0 ]; then \
 			echo "- Binary code saved at output/$${BASENAME}.out"; \
-			echo "\nRunning the program:"; \
-			./output/$${BASENAME}.out; \
-			echo "- Test completed successfully for $$BASENAME."; \
+			echo "Generating optimized binary code:"; \
+			gcc -o "output/$${BASENAME}_optimized.out" "output/$${BASENAME}_optimized.s"; \
+			if [ $$? -eq 0 ]; then \
+				echo "- Binary code saved at output/$${BASENAME}_optimized.out"; \
+				echo "\nTest completed successfully for $$BASENAME."; \
+			else \
+				echo "- Error: Failed to generate optimized binary code."; \
+			fi; \
 		else \
-			echo "- Error: Failed to generate binary code."; \
+			echo "- Error: Failed to generate original binary code."; \
 		fi \
 	else \
 		echo "- Error: Compilation failed."; \
 	fi
 
-OBJS = lex.yy.o parser.tab.o ast.o symbol.o verifications.o tac.o asm.o main.o
+OBJS = lex.yy.o parser.tab.o ast.o symbol.o verifications.o tac.o asm.o optimizer.o main.o
 $(PROJECT): $(OBJS)
 	$(CXX) $(OBJS) -o $(PROJECT)
 
@@ -81,9 +86,9 @@ versions:
 
 .PHONY: clean
 clean:
-	@rm -rf $(PROJECT) lex.yy.cpp *.o .docker-build $(PROJECT).tgz *.output *.tgz *.tab.* *.xml *.html *.gv *.txt output/*
+	@rm -rf $(PROJECT) lex.yy.cpp *.o .docker-build $(PROJECT).tgz *.tgz *.tab.* *.xml *.html *.gv *.txt *.s output/*
 
 .PHONY: tgz
 tgz:
 	@touch $(PROJECT).tgz
-	@tar cvzf $(PROJECT).tgz Makefile ast.cpp ast.hpp main.cpp parser.ypp scanner.l symbol.cpp symbol.hpp verifications.cpp verifications.hpp tac.cpp tac.hpp asm.cpp asm.hpp relatorio.md output/* tests/*
+	@tar cvzf $(PROJECT).tgz Makefile ast.cpp ast.hpp main.cpp parser.ypp scanner.l symbol.cpp symbol.hpp verifications.cpp verifications.hpp tac.cpp tac.hpp asm.cpp asm.hpp optimizer.cpp optimizer.hpp relatorio.md output/* tests/*

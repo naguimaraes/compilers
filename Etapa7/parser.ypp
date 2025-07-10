@@ -10,7 +10,7 @@
     using namespace std;
     
     int yylex(void);
-    int yyerror(string s);
+    void yyerror(string s);
 
     int getLineNumber();
 
@@ -103,8 +103,8 @@ program
 global_declaration_list
     : declaration_list global_declaration_list                               { $$ = new ASTNode(ASTNodeType::DECLARATION_LIST); $$->addChild($1); if ($2 != nullptr) $$->addChild($2); }
     | declaration_list                                                       { $$ = new ASTNode(ASTNodeType::DECLARATION_LIST); $$->addChild($1); }
-    | error global_declaration_list                                          { fprintf(stderr, "Error in global declaration at line %d. Skipping...\n", getLineNumber()); $$ = $2; }
-    | error                                                                  { fprintf(stderr, "Error in global declaration at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | error global_declaration_list                                          { fprintf(stderr, "Syntax error at line %d: Invalid global declaration - expected variable, vector, or function declaration.\n", getLineNumber()); $$ = $2; }
+    | error                                                                  { fprintf(stderr, "Syntax error at line %d: Invalid global declaration - expected variable, vector, or function declaration.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 declaration_list
@@ -127,14 +127,14 @@ literal
 
 variable_declaration
     : kw_type TK_IDENTIFIER '=' literal ';'                                  { $$ = new ASTNode(ASTNodeType::VARIABLE_DECLARATION); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); $$->addChild($4); }
-    | kw_type TK_IDENTIFIER '=' error ';'                                    { fprintf(stderr, "Error in variable initialization at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | kw_type TK_IDENTIFIER '=' error ';'                                    { fprintf(stderr, "Syntax error at line %d: Invalid variable initialization - expected literal value (integer, character, or real).\n", getLineNumber()); $$ = nullptr; }
     ;
 
 vector_declaration
     : kw_type TK_IDENTIFIER '[' LIT_INT ']' ';'                              { $$ = new ASTNode(ASTNodeType::VECTOR_DECLARATION); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); $$->addChild(new ASTNode(ASTNodeType::LITERAL, $4)); }
     | kw_type TK_IDENTIFIER '[' LIT_INT ']' '=' vector_initialization        { $$ = new ASTNode(ASTNodeType::VECTOR_DECLARATION); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); $$->addChild(new ASTNode(ASTNodeType::LITERAL, $4)); ASTNode* initNode = new ASTNode(ASTNodeType::VECTOR_INITIALIZATION); initNode->addChild($7); $$->addChild(initNode); }
-    | kw_type TK_IDENTIFIER '[' error ']' ';'                                { fprintf(stderr, "Error in vector size at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
-    | kw_type TK_IDENTIFIER '[' LIT_INT ']' '=' error                        { fprintf(stderr, "Error in vector initialization at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | kw_type TK_IDENTIFIER '[' error ']' ';'                                { fprintf(stderr, "Syntax error at line %d: Invalid vector size specification - expected integer literal for array size.\n", getLineNumber()); $$ = nullptr; }
+    | kw_type TK_IDENTIFIER '[' LIT_INT ']' '=' error                        { fprintf(stderr, "Syntax error at line %d: Invalid vector initialization - expected comma-separated list of literal values.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 vector_initialization
@@ -144,8 +144,8 @@ vector_initialization
 
 function_declaration
     : kw_type TK_IDENTIFIER '(' formal_parameters ')' commannd_block         { $$ = new ASTNode(ASTNodeType::FUNCTION_DECLARATION); $$->addChild($1); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $2)); if ($4 != nullptr) $$->addChild($4); if ($6 != nullptr) $$->addChild($6); }
-    | kw_type TK_IDENTIFIER '(' error ')' commannd_block                     { fprintf(stderr, "Error in function parameters at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
-    | kw_type TK_IDENTIFIER '(' formal_parameters ')' error                  { fprintf(stderr, "Error in function body at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | kw_type TK_IDENTIFIER '(' error ')' commannd_block                     { fprintf(stderr, "Syntax error at line %d: Invalid function parameter list - expected type-identifier pairs separated by commas.\n", getLineNumber()); $$ = nullptr; }
+    | kw_type TK_IDENTIFIER '(' formal_parameters ')' error                  { fprintf(stderr, "Syntax error at line %d: Invalid function body - expected command block enclosed in braces '{}'.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 formal_parameters
@@ -160,13 +160,13 @@ parameter_list
 
 commannd_block
     : '{' command_list '}'                                                   { $$ = new ASTNode(ASTNodeType::COMMAND); if ($2 != nullptr) $$->addChild($2); }
-    | '{' error '}'                                                          { fprintf(stderr, "Error in command block at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | '{' error '}'                                                          { fprintf(stderr, "Syntax error at line %d: Invalid command block content - expected valid statements (assignments, control flow, etc.).\n", getLineNumber()); $$ = nullptr; }
     ;
 
 command_list
     : command command_list                                                   { $$ = new ASTNode(ASTNodeType::COMMAND_LIST); $$->addChild($1); if ($2 != nullptr) $$->addChild($2); }
     | %empty                                                                 { $$ = nullptr; }
-    | error ';' command_list                                                 { fprintf(stderr, "Error in command at line %d. Skipping...\n", getLineNumber()); $$ = $3; }
+    | error ';' command_list                                                 { fprintf(stderr, "Syntax error at line %d: Invalid statement syntax - check for missing operators, identifiers, or semicolons.\n", getLineNumber()); $$ = $3; }
     ;
 
 command
@@ -177,14 +177,19 @@ command
     | return ';'                                                             { $$ = $1; }
     | flux_control                                                           { $$ = $1; }
     | ';'                                                                    { $$ = nullptr; }
+    | assignment error                                                       { fprintf(stderr, "Syntax error at line %d: Missing semicolon ';' after assignment statement.\n", getLineNumber() - 1); $$ = $1; }
+    | read error                                                             { fprintf(stderr, "Syntax error at line %d: Missing semicolon ';' after read statement.\n", getLineNumber() - 1); $$ = $1; }
+    | print error                                                            { fprintf(stderr, "Syntax error at line %d: Missing semicolon ';' after print statement.\n", getLineNumber() - 1); $$ = $1; }
+    | return error                                                           { fprintf(stderr, "Syntax error at line %d: Missing semicolon ';' after return statement.\n", getLineNumber() - 1); $$ = $1; }
     ;
+
 
 assignment
     : TK_IDENTIFIER '=' expression                                           { $$ = new ASTNode(ASTNodeType::ASSIGNMENT, nullptr, {}, getLineNumber()); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
     | TK_IDENTIFIER '[' expression ']' '=' expression                        { $$ = new ASTNode(ASTNodeType::ASSIGNMENT, nullptr, {}, getLineNumber()); ASTNode* vecAccess = new ASTNode(ASTNodeType::VECTOR_ACCESS, nullptr, {}, getLineNumber()); vecAccess->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); vecAccess->addChild($3); $$->addChild(vecAccess); if ($6 != nullptr) $$->addChild($6); }
-    | TK_IDENTIFIER '=' error                                                { fprintf(stderr, "Error in assignment expression at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
-    | TK_IDENTIFIER '[' error ']' '=' expression                             { fprintf(stderr, "Error in vector index at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
-    | TK_IDENTIFIER '[' expression ']' '=' error                             { fprintf(stderr, "Error in vector assignment expression at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | TK_IDENTIFIER '=' error                                                { fprintf(stderr, "Syntax error at line %d: Invalid assignment expression - expected valid expression on right side of '='.\n", getLineNumber()); $$ = nullptr; }
+    | TK_IDENTIFIER '[' error ']' '=' expression                             { fprintf(stderr, "Syntax error at line %d: Invalid array index expression - expected valid expression inside square brackets.\n", getLineNumber()); $$ = nullptr; }
+    | TK_IDENTIFIER '[' expression ']' '=' error                             { fprintf(stderr, "Syntax error at line %d: Invalid array assignment expression - expected valid expression on right side of '='.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 read
@@ -193,7 +198,7 @@ read
 
 print
     : KW_PRINT print_list                                                    { $$ = new ASTNode(ASTNodeType::PRINT, nullptr, {}, getLineNumber()); $$->addChild($2); }
-    | KW_PRINT error                                                         { fprintf(stderr, "Error in print statement at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | KW_PRINT error                                                         { fprintf(stderr, "Syntax error at line %d: Invalid print statement - expected string literals or expressions to print.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 print_list
@@ -205,7 +210,7 @@ print_list
 
 return
     : KW_RETURN expression                                                   { $$ = new ASTNode(ASTNodeType::RETURN, nullptr, {}, getLineNumber()); if ($2 != nullptr) $$->addChild($2); }
-    | KW_RETURN error                                                        { fprintf(stderr, "Error in return statement at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | KW_RETURN error                                                        { fprintf(stderr, "Syntax error at line %d: Invalid return statement - expected valid expression after 'return' keyword.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 expression
@@ -227,13 +232,13 @@ expression
     | TK_IDENTIFIER '[' expression ']'                                       { $$ = new ASTNode(ASTNodeType::VECTOR_ACCESS, nullptr, {}, getLineNumber()); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); $$->addChild($3); }
     | function_call                                                          { $$ = $1; }
     | factor                                                                 { $$ = $1; }
-    | '(' error ')'                                                          { fprintf(stderr, "Error in parenthesized expression at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
-    | TK_IDENTIFIER '[' error ']'                                            { fprintf(stderr, "Error in vector access at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | '(' error ')'                                                          { fprintf(stderr, "Syntax error at line %d: Invalid parenthesized expression - expected valid expression inside parentheses.\n", getLineNumber()); $$ = nullptr; }
+    | TK_IDENTIFIER '[' error ']'                                            { fprintf(stderr, "Syntax error at line %d: Invalid array access - expected valid index expression inside square brackets.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 function_call
     : TK_IDENTIFIER '(' arguments_list ')'                                   { $$ = new ASTNode(ASTNodeType::FUNCTION_CALL, nullptr, {}, getLineNumber()); $$->addChild(new ASTNode(ASTNodeType::SYMBOL, $1)); if ($3 != nullptr) $$->addChild($3); }
-    | TK_IDENTIFIER '(' error ')'                                            { fprintf(stderr, "Error in function call arguments at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | TK_IDENTIFIER '(' error ')'                                            { fprintf(stderr, "Syntax error at line %d: Invalid function call arguments - expected comma-separated list of expressions.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 factor
@@ -258,22 +263,22 @@ flux_control
     | KW_IF '(' expression ')' command KW_ELSE command                       { $$ = new ASTNode(ASTNodeType::IF, nullptr, {}, getLineNumber()); $$->addChild($3); if ($5 != nullptr) $$->addChild($5); ASTNode* elseNode = new ASTNode(ASTNodeType::ELSE, nullptr, {}, getLineNumber()); if ($7 != nullptr) elseNode->addChild($7); $$->addChild(elseNode); }
     | KW_WHILE expression KW_DO command                                      { $$ = new ASTNode(ASTNodeType::WHILE_DO, nullptr, {}, getLineNumber()); $$->addChild($2); if ($4 != nullptr) $$->addChild($4); }
     | KW_DO command KW_WHILE expression ';'                                  { $$ = new ASTNode(ASTNodeType::DO_WHILE, nullptr, {}, getLineNumber()); if ($2 != nullptr) $$->addChild($2); $$->addChild($4); }
-    | KW_IF '(' error ')' command %prec IFX                                  { fprintf(stderr, "Error in if condition at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
-    | KW_IF '(' error ')' command KW_ELSE command                            { fprintf(stderr, "Error in if condition at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
-    | KW_WHILE error KW_DO command                                           { fprintf(stderr, "Error in while condition at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
-    | KW_DO command KW_WHILE error ';'                                       { fprintf(stderr, "Error in do-while condition at line %d. Skipping...\n", getLineNumber()); $$ = nullptr; }
+    | KW_IF '(' error ')' command %prec IFX                                  { fprintf(stderr, "Syntax error at line %d: Invalid if condition - expected boolean expression inside parentheses.\n", getLineNumber()); $$ = nullptr; }
+    | KW_IF '(' error ')' command KW_ELSE command                            { fprintf(stderr, "Syntax error at line %d: Invalid if-else condition - expected boolean expression inside parentheses.\n", getLineNumber()); $$ = nullptr; }
+    | KW_WHILE error KW_DO command                                           { fprintf(stderr, "Syntax error at line %d: Invalid while condition - expected boolean expression between 'while' and 'do' keywords.\n", getLineNumber()); $$ = nullptr; }
+    | KW_DO command KW_WHILE error ';'                                       { fprintf(stderr, "Syntax error at line %d: Invalid do-while condition - expected boolean expression after 'while' keyword.\n", getLineNumber()); $$ = nullptr; }
     ;
 
 %%
 
-int yyerror(string s){
+void yyerror(string s){
     s[0] = static_cast<char>(toupper(static_cast<unsigned char>(s[0])));
-    //fprintf(stderr, "%s at line %d.\n", s.c_str(), getLineNumber());
+    //fprintf(stderr, "%s.\n", s.c_str(), getLineNumber());
 
     // Does not terminate compilation immediately to allow error recovery
     // exit(3);
 
-    return ++syntaxErrors;
+   ++syntaxErrors;
 }
 
 int getSyntaxErrors(){

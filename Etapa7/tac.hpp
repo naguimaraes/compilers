@@ -68,6 +68,8 @@ public:
     // Setters
     void setPrev(TAC* prev);
     void setNext(TAC* next);
+    void setOp1(Symbol* op1);
+    void setOp2(Symbol* op2);
     
     // Print TAC instruction
     void print() const;

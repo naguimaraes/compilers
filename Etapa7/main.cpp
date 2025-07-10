@@ -11,6 +11,7 @@
 #include "verifications.hpp"
 #include "tac.hpp"
 #include "asm.hpp"
+#include "optimizer.hpp"
 
 int yyparse();
 extern char *yytext;
@@ -86,23 +87,26 @@ int main(int argc, char **argv){
         fprintf(stderr, "Semantic analysis completed with %d error(s).\nCompilation ended.\n", semanticErrors);
         exit(4); // Exit code 4 for semantic error 
     } else {
-        fprintf(stderr, "Semantic analysis completed successfully - no errors found.\n");
+
+        // If no syntax or semantic errors, proceed with TAC generation
+        fprintf(stderr, "\nSemantic analysis completed successfully - no errors found.\n");
         
-        // Proceed to TAC generation
         initTAC();
-        TAC* tacCode = generateTAC(root);
-        if (tacCode) {
-            // Save TAC to file
+        TAC* originalTAC = generateTAC(root);
+        if (originalTAC) {
+
+            // Original flow, from TAC to ASM without optimization
+            // Save original TAC to file first (before optimization)
             std::ofstream tacFile(argv[5]);
             if (!tacFile.is_open()) {
                 fprintf(stderr, "File %s could not be opened for writing.\n", argv[5]);
                 exit(2); // Exit code 2 for file not found
             }
             tacFile.close();
-            printTACToFile(argv[5], tacCode);
+            printTACToFile(argv[5], originalTAC);
             fprintf(stderr, "- TAC list saved to file \"%s\".\n", argv[5]);
             
-            // Save symbol table to file (after TAC generation)
+            // Save original symbol table to file (after TAC generation)
             std::ofstream symbolFile(argv[2]);
             if (!symbolFile.is_open()) {
                 fprintf(stderr, "File %s could not be opened for writing.\n", argv[2]);
@@ -111,16 +115,64 @@ int main(int argc, char **argv){
             symbolFile.close();
             printSymbolTableToFile(argv[2]);
             fprintf(stderr, "- Symbol table saved to file \"%s\".\n", argv[2]);
-            
-            // Generate assembly code
+
+            // Generate assembly code using original TAC
             std::ofstream asmFile(argv[6]);
             if (!asmFile.is_open()) {
                 fprintf(stderr, "File %s could not be opened for writing.\n", argv[6]);
                 exit(2); // Exit code 2 for file not found
             }
             asmFile.close();
-            generateASM(tacCode, argv[6]);
-            fprintf(stderr, "- Assembly code saved to file \"%s\".\n", argv[6]);
+            generateASM(originalTAC, argv[6]);
+            fprintf(stderr, "- Original assembly code saved to file \"%s\".\n", argv[6]);
+
+
+
+
+            // Generate assembly code using optimized TAC
+            // Apply TAC optimizations
+            fprintf(stderr, "\n");
+            std::string baseFilename = std::string(argv[5]);
+            if (baseFilename.size() >= 4 && baseFilename.substr(baseFilename.size() - 4) == ".txt") {
+                baseFilename = baseFilename.substr(0, baseFilename.size() - 4);
+            }
+            std::string optimizedTacFilename = baseFilename + "_optimized.txt";
+            TAC* optimizedTac = optimizeTAC(originalTAC, optimizedTacFilename);
+            if (optimizedTac) {
+                fprintf(stderr, "- TAC optimization completed successfully and saved to \"%s\".\n", optimizedTacFilename.c_str());
+            } else {
+                fprintf(stderr, "- TAC optimization failed.\n");
+            }
+
+            // Save optimized symbol table to file (after TAC generation)
+            baseFilename = std::string(argv[2]);
+            if (baseFilename.size() >= 4 && baseFilename.substr(baseFilename.size() - 4) == ".txt") {
+                baseFilename = baseFilename.substr(0, baseFilename.size() - 4);
+            }
+            std::string optimizedSymbolTableFilename = baseFilename + "_optimized.txt";
+            std::ofstream optimizedSymbolFile(optimizedSymbolTableFilename);
+            if (!optimizedSymbolFile.is_open()) {
+                fprintf(stderr, "File %s could not be opened for writing.\n", optimizedSymbolTableFilename.c_str());
+                exit(2); // Exit code 2 for file not found
+            }
+            optimizedSymbolFile.close();
+            printSymbolTableToFile(optimizedSymbolTableFilename);
+            fprintf(stderr, "- Optimized symbol table saved to file \"%s\".\n", optimizedSymbolTableFilename.c_str());
+
+            // Generate assembly code using optimized TAC
+            baseFilename = std::string(argv[6]);
+            if (baseFilename.size() >= 1 && baseFilename.substr(baseFilename.size() - 2) == ".s") {
+                baseFilename = baseFilename.substr(0, baseFilename.size() - 2);
+            }
+            std::string optimizedAsmFilename = baseFilename + "_optimized.s";
+            std::ofstream optimizedAsmFile(optimizedAsmFilename);
+            if (!optimizedAsmFile.is_open()) {
+                fprintf(stderr, "File %s could not be opened for writing.\n", optimizedAsmFilename.c_str());
+                exit(2); // Exit code 2 for file not found
+            }
+            optimizedAsmFile.close();
+            generateASM(optimizedTac, optimizedAsmFilename);
+            fprintf(stderr, "- Optimized assembly code saved to file \"%s\".\n", optimizedAsmFilename.c_str());
         } else {
             fprintf(stderr, "TAC generation failed.\n");
         }

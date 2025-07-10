@@ -1,6 +1,99 @@
-int i = ;
+// Teste completo de recuperação de erros sintáticos - Etapa 7
+// Este arquivo testa TODOS os tipos de erro sintático que podem ser recuperados
 
-int main (){
+// 1. Declarações Globais - erro de declaração global inválida
+bad_global_declaration;     // Erro: declaração global inválida
+int a = 5;                 // OK: declaração válida após erro
 
+// 2. Declaração de Variáveis - inicialização inválida
+int x = ;                  // Erro: inicialização inválida (sem literal)
+int y = 42;                // OK: declaração válida após erro
+
+// 3. Declaração de Vetores
+int arr1[xyz];             // Erro: tamanho de vetor inválido (não é literal inteiro)
+int arr2[5];               // OK: declaração válida após erro
+int arr3[3] = bad_init;    // Erro: inicialização de vetor inválida
+int arr4[2] = 1, 2;        // OK: declaração válida após erro
+
+// 4. Declaração de Funções
+int func1(bad params) {    // Erro: lista de parâmetros inválida
+    return 1;
+}
+int func2(int a, int b) bad_body;  // Erro: corpo da função inválido
+int func3(int x) {         // OK: função válida após erro
+    return x;
+}
+
+int w = 5;
+
+// 5. Função principal com vários erros de comandos
+int main() {
+    
+    // 6. Blocos de Comandos - conteúdo de bloco inválido
+    {
+        bad statement syntax;   // Erro: conteúdo de bloco inválido
+        w = 10;                // OK: statement válido após erro
+    }
+    
+    // 7. Comandos e Instruções - sintaxe inválida em lista de comandos
+    bad command syntax;        // Erro: sintaxe de comando inválida
+    w = 20;                   // OK: comando válido após erro
+    
+    // 8. Comandos sem ponto-e-vírgula (testando recuperação de semicolon)
+    w = 5                     // Erro: ponto-e-vírgula ausente após atribuição
+    print "Hello"             // Erro: ponto-e-vírgula ausente após print
+    read w                    // Erro: ponto-e-vírgula ausente após read
+    return 0                  // Erro: ponto-e-vírgula ausente após return
+    
+    // 9. Atribuições com expressões inválidas
+    w = ;                     // Erro: expressão de atribuição inválida
+    arr2[bad_index] = 5;      // Erro: índice de vetor inválido
+    arr2[1] = ;               // Erro: atribuição a vetor inválida
+    w = 100;                  // OK: atribuição válida após erro
+    
+    // 10. Comandos de Entrada e Saída
+    print ;                   // Erro: comando print inválido
+    print "Valid message";    // OK: print válido após erro
+    
+    // 11. Comando de Retorno
+    return ;                  // Erro: expressão de retorno inválida
+    
+    // 12. Expressões malformadas
+    w = ( );                  // Erro: expressão entre parênteses inválida
+    w = arr2[ ];              // Erro: acesso a vetor inválido
+    w = 5 + 3;               // OK: expressão válida após erro
+    
+    // 13. Chamadas de Função
+    func3( );                 // Erro: argumentos de função inválidos
+    func3(42);               // OK: chamada válida após erro
+    
+    // 14. Controle de Fluxo
+    if ( ) {                  // Erro: condição if inválida
+        w = 1;
+    }
+    
+    if ( ) {                  // Erro: condição if-else inválida  
+        w = 2;
+    } else {
+        w = 3;
+    }
+    
+    while do {               // Erro: condição while inválida
+        w = w + 1;
+    }
+    
+    do {
+        w = w - 1;
+    } while ;                // Erro: condição do-while inválida
+    
+    // Estruturas válidas após erros para mostrar recuperação
+    if (w > 0) {
+        w = w * 2;
+    }
+    
+    while w < 100 do {
+        w = w + 1;
+    }
+    
     return 0;
 }
