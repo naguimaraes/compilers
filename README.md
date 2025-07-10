@@ -44,8 +44,11 @@ The stages are as follows:
 ### [Stage 6 (Etapa6)](./Etapa6/): Target Code Generation ✅
 
 - Translation of TAC to x86 assembly
-- Stack-based memory management
 - Integration with libc for standard functions
+
+### [Stage 7 (Etapa7)](./Etapa7/): Error Recovery and Optimization ✅
+
+- Implementation of error recovery strategies in the parser
 
 ## 2025++1 Language Specification
 
