@@ -15,7 +15,7 @@ DEP_FILES = parser.tab.hpp
 
 LEX = flex
 BISON = bison
-BISONFLAGS = -d -g -v --html
+BISONFLAGS = -d
 
 .PHONY: all
 all: $(DEFAULT_VERSION)
