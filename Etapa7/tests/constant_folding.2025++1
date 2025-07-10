@@ -1,3 +1,6 @@
+// Test for constant folding 
+// Made by Ian Kersz Amaral (338368)
+
 int a = 0;
 int i = 0;
 

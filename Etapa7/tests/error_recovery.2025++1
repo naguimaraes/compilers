@@ -1,92 +1,93 @@
-// Teste completo de recuperação de erros sintáticos - Etapa 7
-// Este arquivo testa TODOS os tipos de erro sintático que podem ser recuperados
+// Complete syntactic error recovery test - Stage 7
+// This file tests ALL types of syntactic errors that can be recovered by the parser.
+// Made by Nathan Guimaraes (334437)
 
-// 1. Declarações Globais - erro de declaração global inválida
-bad_global_declaration;     // Erro: declaração global inválida
-int a = 5;                 // OK: declaração válida após erro
+// 1. Global Declarations - invalid global declaration error
+bad_global_declaration;     // Error: invalid global declaration
+int a = 5;                 // OK: valid declaration after error
 
-// 2. Declaração de Variáveis - inicialização inválida
-int x = ;                  // Erro: inicialização inválida (sem literal)
-int y = 42;                // OK: declaração válida após erro
+// 2. Variable Declaration - invalid initialization
+int x = ;                  // Error: invalid initialization (no literal)
+int y = 42;                // OK: valid declaration after error
 
-// 3. Declaração de Vetores
-int arr1[xyz];             // Erro: tamanho de vetor inválido (não é literal inteiro)
-int arr2[5];               // OK: declaração válida após erro
-int arr3[3] = bad_init;    // Erro: inicialização de vetor inválida
-int arr4[2] = 1, 2;        // OK: declaração válida após erro
+// 3. Array Declaration
+int arr1[xyz];             // Error: invalid array size (not an integer literal)
+int arr2[5];               // OK: valid declaration after error
+int arr3[3] = bad_init;    // Error: invalid array initialization
+int arr4[2] = 1, 2;        // OK: valid declaration after error
 
-// 4. Declaração de Funções
-int func1(bad params) {    // Erro: lista de parâmetros inválida
+// 4. Function Declaration
+int func1(bad params) {    // Error: invalid parameter list
     return 1;
 }
-int func2(int a, int b) bad_body;  // Erro: corpo da função inválido
-int func3(int x) {         // OK: função válida após erro
+int func2(int a, int b) bad_body;  // Error: invalid function body
+int func3(int x) {         // OK: valid function after error
     return x;
 }
 
 int w = 5;
 
-// 5. Função principal com vários erros de comandos
+// 5. Main function with various command errors
 int main() {
     
-    // 6. Blocos de Comandos - conteúdo de bloco inválido
+    // 6. Command Blocks - invalid block content
     {
-        bad statement syntax;   // Erro: conteúdo de bloco inválido
-        w = 10;                // OK: statement válido após erro
+        bad statement syntax;   // Error: invalid block content
+        w = 10;                // OK: valid statement after error
     }
     
-    // 7. Comandos e Instruções - sintaxe inválida em lista de comandos
-    bad command syntax;        // Erro: sintaxe de comando inválida
-    w = 20;                   // OK: comando válido após erro
+    // 7. Commands and Instructions - invalid syntax in command list
+    bad command syntax;        // Error: invalid command syntax
+    w = 20;                   // OK: valid command after error
     
-    // 8. Comandos sem ponto-e-vírgula (testando recuperação de semicolon)
-    w = 5                     // Erro: ponto-e-vírgula ausente após atribuição
-    print "Hello"             // Erro: ponto-e-vírgula ausente após print
-    read w                    // Erro: ponto-e-vírgula ausente após read
-    return 0                  // Erro: ponto-e-vírgula ausente após return
+    // 8. Commands without semicolon (testing semicolon recovery)
+    w = 5                     // Error: missing semicolon after assignment
+    print "Hello"             // Error: missing semicolon after print
+    read w                    // Error: missing semicolon after read
+    return 0                  // Error: missing semicolon after return
     
-    // 9. Atribuições com expressões inválidas
-    w = ;                     // Erro: expressão de atribuição inválida
-    arr2[bad_index] = 5;      // Erro: índice de vetor inválido
-    arr2[1] = ;               // Erro: atribuição a vetor inválida
-    w = 100;                  // OK: atribuição válida após erro
+    // 9. Assignments with invalid expressions
+    w = ;                     // Error: invalid assignment expression
+    arr2[bad_index] = 5;      // Error: invalid array index
+    arr2[1] = ;               // Error: invalid array assignment
+    w = 100;                  // OK: valid assignment after error
     
-    // 10. Comandos de Entrada e Saída
-    print ;                   // Erro: comando print inválido
-    print "Valid message";    // OK: print válido após erro
+    // 10. Input and Output Commands
+    print ;                   // Error: invalid print command
+    print "Valid message";    // OK: valid print after error
     
-    // 11. Comando de Retorno
-    return ;                  // Erro: expressão de retorno inválida
+    // 11. Return Command
+    return ;                  // Error: invalid return expression
     
-    // 12. Expressões malformadas
-    w = ( );                  // Erro: expressão entre parênteses inválida
-    w = arr2[ ];              // Erro: acesso a vetor inválido
-    w = 5 + 3;               // OK: expressão válida após erro
+    // 12. Malformed Expressions
+    w = ( );                  // Error: invalid expression in parentheses
+    w = arr2[ ];              // Error: invalid array access
+    w = 5 + 3;               // OK: valid expression after error
     
-    // 13. Chamadas de Função
-    func3( );                 // Erro: argumentos de função inválidos
-    func3(42);               // OK: chamada válida após erro
+    // 13. Function Calls
+    func3( );                 // Error: invalid function arguments
+    func3(42);               // OK: valid call after error
     
-    // 14. Controle de Fluxo
-    if ( ) {                  // Erro: condição if inválida
+    // 14. Control Flow
+    if ( ) {                  // Error: invalid if condition
         w = 1;
     }
     
-    if ( ) {                  // Erro: condição if-else inválida  
+    if ( ) {                  // Error: invalid if-else condition  
         w = 2;
     } else {
         w = 3;
     }
     
-    while do {               // Erro: condição while inválida
+    while do {               // Error: invalid while condition
         w = w + 1;
     }
     
     do {
         w = w - 1;
-    } while ;                // Erro: condição do-while inválida
+    } while ;                // Error: invalid do-while condition
     
-    // Estruturas válidas após erros para mostrar recuperação
+    // Valid structures after errors to show recovery
     if (w > 0) {
         w = w * 2;
     }

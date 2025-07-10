@@ -7,6 +7,34 @@
 
 O projeto foi desenvolvido e testado em um ambiente Linux horas com um processador AMD Ryzen 7 5800X e horas em um processador AMD Ryzen 9 9900X (ambos seguem a ISA `x86_64`).
 
+## Compilação do Projeto
+
+Rodando o comando `make` ou `make etapa7`, o projeto foi compilado. Utilizando o comando `time make` em um computador com o processador AMD Ryzen 9 9900X, o tempo de compilação foi medido, resultando em aproximadamente 1.7 segundo:
+
+``` bash
+nathan@626679:~/Documents/compilers/Etapa7$ time make
+bison -d parser.ypp
+flex -o lex.yy.cpp scanner.l 
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o lex.yy.o lex.yy.cpp
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o parser.tab.o parser.tab.cpp
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o ast.o ast.cpp
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o symbol.o symbol.cpp
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o verifications.o verifications.cpp
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o tac.o tac.cpp
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o asm.o asm.cpp
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o optimizer.o optimizer.cpp
+g++ -Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG   -c -o main.o main.cpp
+g++ lex.yy.o parser.tab.o ast.o symbol.o verifications.o tac.o asm.o optimizer.o main.o -o etapa7
+
+real    0m1.773s
+user    0m1.577s
+sys     0m0.197s
+```
+
+Há outros 2 comandos disponíveis no Makefile:
+    - `make test FILE=<nome_do_arquivo>`: compila o arquivo especificado, gera os arquivos de saída com as estruturas intermédiarias e executa o teste.
+    - `make optimize FILE=<nome_do_arquivo>`: compila o arquivo especificado, gera os arquivos de saída com as estruturas intermediárias e executa o otimizador TAC, gerando o código otimizado.
+
 ## Detalhes da Implementação - Recuperação de Erros
 
 A recuperação de erros foi implementada utilizando o token reservado `error` no arquivo `parser.ypp`, no qual foram adicionadas regras para encontrar pontos de sincronização e continuar a análise sintática mesmo após encontrar erros. Os seguintes pontos de sincronização foram definidos:
@@ -119,14 +147,88 @@ Semantic analysis completed with 1 error(s).
 - Error: Compilation failed.
 ```
 
-## Compilação do Projeto
+## Detalhes da Implementação - Otimizações
 
-Rodando o comando `make` ou `make etapa7`, o projeto foi compilado. Utilizando o comando `time make` em um computador com o processador AMD Ryzen 9 9900X, o tempo de compilação foi medido, resultando em aproximadamente 2.5 segundos:
+Nos arquivos `optimizer.cpp` e `optimizer.hpp`, foram implementadas duas otimizações: **Constant Folding** e **Dead Code Elimination**.
+
+### Constant Folding
+
+O otimizador identifica operações aritméticas e lógicas cujos operandos são todos literais numéricos escalares (dados declarados diretamente no arquivo, e não lidos pelo usuário em tempo de execução) e as substitui por um único valor constante. Por exemplo, `soma = 2 + 3 * 4` é simplificado para `soma = 14`. A implementação utiliza:
+
+- **`isNumericLiteral()`**: verifica se um símbolo é um literal numérico (tipos `LIT_INT` ou `LIT_REAL`)
+- **`computeConstantExpression()`**: executa as operações aritméticas (`ADD`, `SUB`, `MUL`, `DIV`, `MOD`) e lógicas (`LT`, `GT`, `EQ`, `AND`, `OR`, etc.)
+- **`createConstantSymbol()`**: cria um novo símbolo com o valor computado
+
+### Dead Code Elimination
+
+Remove instruções `MOVE` que atribuem constantes a temporários não utilizados posteriormente no código. A implementação inclui:
+
+- **`isSymbolUsed()`**: verifica se um símbolo é referenciado em instruções subsequentes
+- **`substituteSymbolUses()`**: substitui todas as ocorrências de um símbolo por outro
+
+### Propagação de Constantes
+
+Combina as duas otimizações anteriores substituindo usos de temporários definidos por `MOVE` com constantes pelos valores originais, permitindo posterior eliminação do `MOVE` e constant folding das operações que usam esses temporários.
+
+### Algoritmo de Otimização
+
+O otimizador utiliza um loop iterativo que executa múltiplos passes sobre o código TAC até que nenhuma otimização adicional seja possível. Em cada passe, percorre sequencialmente todas as instruções TAC aplicando as três otimizações (dead code elimination, propagação de constantes e constant folding). O loop continua enquanto houver modificações (`hasOptimizations = true`), garantindo aplicação recursiva e completa das transformações.
+
+Para prevenir loops infinitos causados por erros de implementação ou casos patológicos, foi implementado um limite de segurança de 1000 passes, após o qual o otimizador emite um aviso e para a execução. Este limite é suficientemente alto para permitir otimização completa de programas complexos, mas previne travamentos do compilador.
+
+### Teste para as otimizações
+
+Para o arquivo `tests/constant_folding.2025++1`, a expressão `(((02 * 03) / 01) + 04 - 05 + 06 - 07 + 08 - 09 + 10)` foi completamente simplificada para a constante `31` em apenas 2 passes, eliminando 18 operações intermediárias. Estas mesmas 18 operações seriam repetidas em cada execução do loop no programa não otimizado, o que resulta em uma redução de aproximadamente `(1000000000 - 1) * 18` operações.
+
+Primeiro, compilei o código para gerar ambos os arquivos de saída, o original e o otimizado:
 
 ``` bash
+nathan@626679:~/Documents/compilers/Etapa7$ make optimize FILE=tests/constant_folding.2025++1 
+The file had 17 lines in total.
+Syntax analysis completed successfully - no errors found.
+- AST structure saved to file "output/constant_folding_AST.txt".
+- Decompiled code saved to file "output/constant_folding_decompiled.txt".
 
+Semantic analysis completed successfully - no errors found.
+- TAC list saved to file "output/constant_folding_TAC.txt".
+- Symbol table saved to file "output/constant_folding_symbol_table.txt".
+- Original assembly code saved to file "output/constant_folding.s".
+
+Constant folding optimization completed: 18 expressions optimized in 2 passes.
+- TAC optimization completed successfully and saved to "output/constant_folding_TAC_optimized.txt".
+- Optimized symbol table saved to file "output/constant_folding_symbol_table_optimized.txt".
+- Optimized assembly code saved to file "output/constant_folding_optimized.s".
+
+Generating original binary code:
+- Binary code saved at output/constant_folding.out
+Generating optimized binary code:
+- Binary code saved at output/constant_folding_optimized.out
+
+Compilation completed successfully for tests/constant_folding.2025++1.
 ```
 
-Sendo o arquivo `asm.cpp` o mais demorado a se compilar. Note a compilação de todos os códigos-fonte com as flags `-Wall -Wextra -pedantic -Wconversion -std=c++11 -g -DDEBUG` e que nenhum erro ou aviso foi gerado durante toda a compilação.
+O teste da otimização foi executado em um processador muito potente e de lançamento recente, o que influencia os tempos de execução. Caso o teste seja rodado em um processador menos potente, a otimização deve reduzir percentualmente ainda mais o tempo de execução.
 
-## Testes do Projeto
+A execução do código original, não otimizado:
+
+``` bash
+nathan@626679:~/Documents/compilers/Etapa7$ time ./output/constant_folding.out 
+Result of the loop: 935228928
+
+
+real    0m1.843s
+user    0m1.843s
+sys     0m0.001s
+```
+
+A execução do código otimizado:
+
+``` bash
+nathan@626679:~/Documents/compilers/Etapa7$ time ./output/constant_folding.out 
+Result of the loop: 935228928
+
+
+real    0m0.565s
+user    0m0.562s
+sys     0m0.003s
+```

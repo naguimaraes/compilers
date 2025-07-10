@@ -1,0 +1,149 @@
+-------------- AST STRUCTURE MADE BY NATHAN GUIMARAES (334437) --------------
+PROGRAM
+  DECLARATION_LIST
+    VARIABLE_DECLARATION
+      INT
+      SYMBOL (symbol: a)
+      LITERAL (symbol: 5)
+    DECLARATION_LIST
+      DECLARATION_LIST
+        VARIABLE_DECLARATION
+          INT
+          SYMBOL (symbol: y)
+          LITERAL (symbol: 24)
+        DECLARATION_LIST
+          DECLARATION_LIST
+            VECTOR_DECLARATION
+              INT
+              SYMBOL (symbol: arr2)
+              LITERAL (symbol: 5)
+            DECLARATION_LIST
+              DECLARATION_LIST
+                VECTOR_DECLARATION
+                  INT
+                  SYMBOL (symbol: arr4)
+                  LITERAL (symbol: 2)
+                  VECTOR_INITIALIZATION
+                    VECTOR_INITIALIZATION
+                      LITERAL (symbol: 1)
+                      VECTOR_INITIALIZATION
+                        LITERAL (symbol: 2)
+                DECLARATION_LIST
+                  DECLARATION_LIST
+                    DECLARATION_LIST
+                      FUNCTION_DECLARATION
+                        INT
+                        SYMBOL (symbol: func3)
+                        FORMAL_PARAMETERS
+                          PARAMETERS_LIST
+                            INT
+                            SYMBOL (symbol: x)
+                        COMMAND
+                          COMMAND_LIST
+                            RETURN
+                              SYMBOL (symbol: x)
+                      DECLARATION_LIST
+                        VARIABLE_DECLARATION
+                          INT
+                          SYMBOL (symbol: w)
+                          LITERAL (symbol: 5)
+                        DECLARATION_LIST
+                          FUNCTION_DECLARATION
+                            INT
+                            SYMBOL (symbol: main)
+                            FORMAL_PARAMETERS
+                            COMMAND
+                              COMMAND_LIST
+                                COMMAND
+                                  COMMAND_LIST
+                                    ASSIGNMENT
+                                      SYMBOL (symbol: w)
+                                      LITERAL (symbol: 01)
+                                COMMAND_LIST
+                                  ASSIGNMENT
+                                    SYMBOL (symbol: w)
+                                    LITERAL (symbol: 02)
+                                  COMMAND_LIST
+                                    ASSIGNMENT
+                                      SYMBOL (symbol: w)
+                                      LITERAL (symbol: 5)
+                                    COMMAND_LIST
+                                      PRINT
+                                        LITERAL (symbol: "Hello")
+                                      COMMAND_LIST
+                                        READ
+                                          SYMBOL (symbol: w)
+                                        COMMAND_LIST
+                                          RETURN
+                                            LITERAL (symbol: 0)
+                                          COMMAND_LIST
+                                            COMMAND_LIST
+                                              ASSIGNMENT
+                                                VECTOR_ACCESS
+                                                  SYMBOL (symbol: arr2)
+                                                  SYMBOL (symbol: bad_index)
+                                                LITERAL (symbol: 5)
+                                              COMMAND_LIST
+                                                COMMAND_LIST
+                                                  ASSIGNMENT
+                                                    SYMBOL (symbol: w)
+                                                    LITERAL (symbol: 001)
+                                                  COMMAND_LIST
+                                                    COMMAND_LIST
+                                                      PRINT
+                                                        LITERAL (symbol: "Valid message")
+                                                      COMMAND_LIST
+                                                        COMMAND_LIST
+                                                          ASSIGNMENT
+                                                            SYMBOL (symbol: w)
+                                                          COMMAND_LIST
+                                                            ASSIGNMENT
+                                                              SYMBOL (symbol: w)
+                                                            COMMAND_LIST
+                                                              ASSIGNMENT
+                                                                SYMBOL (symbol: w)
+                                                                ADD
+                                                                  LITERAL (symbol: 5)
+                                                                  LITERAL (symbol: 3)
+                                                              COMMAND_LIST
+                                                                COMMAND_LIST
+                                                                  COMMAND_LIST
+                                                                    COMMAND_LIST
+                                                                      COMMAND_LIST
+                                                                        IF
+                                                                          GREATER_THAN
+                                                                            SYMBOL (symbol: w)
+                                                                            LITERAL (symbol: 0)
+                                                                          COMMAND
+                                                                            COMMAND_LIST
+                                                                              ASSIGNMENT
+                                                                                SYMBOL (symbol: w)
+                                                                                MULTIPLY
+                                                                                  SYMBOL (symbol: w)
+                                                                                  LITERAL (symbol: 2)
+                                                                        else
+                                                                          GREATER_THAN
+                                                                            SYMBOL (symbol: w)
+                                                                            LITERAL (symbol: 0)
+                                                                          COMMAND
+                                                                            COMMAND_LIST
+                                                                              ASSIGNMENT
+                                                                                SYMBOL (symbol: w)
+                                                                                MULTIPLY
+                                                                                  SYMBOL (symbol: w)
+                                                                                  LITERAL (symbol: 2)
+                                                                        COMMAND_LIST
+                                                                          WHILE_DO
+                                                                            LESS_THAN
+                                                                              SYMBOL (symbol: w)
+                                                                              LITERAL (symbol: 001)
+                                                                            COMMAND
+                                                                              COMMAND_LIST
+                                                                                ASSIGNMENT
+                                                                                  SYMBOL (symbol: w)
+                                                                                  ADD
+                                                                                    SYMBOL (symbol: w)
+                                                                                    LITERAL (symbol: 1)
+                                                                          COMMAND_LIST
+                                                                            RETURN
+                                                                              LITERAL (symbol: 0)

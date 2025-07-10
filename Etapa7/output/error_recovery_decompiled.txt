@@ -1,0 +1,38 @@
+// Decompiled 2025++1 code from AST
+// Made by Nathan Guimaraes (334437)
+
+int a = 5;
+
+int y = 42;
+
+int arr2[5];
+
+int arr4[2] = 1, 2;
+
+
+int func3(int x) {
+	return x;
+}
+
+int w = 5;
+int main() {
+	{
+		w = 10;
+	}
+	w = 20;
+	w = 5;
+	print "Hello" ;
+	read w;
+	return 0;
+	arr2[bad_index] = 5;
+	w = 100;
+	print "Valid message" ;
+	w = 	w = 	w = (5 + 3);
+	if ((w > 0))	{
+		w = (w * 2);
+	}
+	while(w < 100) do	{
+		w = (w + 1);
+	}
+	return 0;
+}
